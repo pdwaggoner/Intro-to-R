@@ -1,0 +1,197 @@
+---
+title: "Data Visualization: Base `R`"
+author: | 
+  | Philip Waggoner
+  | College of William & Mary
+  | pdwaggoner@wm.edu
+#date: "9/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Preface
+
+This week we transition to data visualization. We will start by using only base `R`, and progress next class to using `ggplot2`. Both are very powerful in that they build plots by layering objects (these are "geometric" objects in `ggplot2`, hence the name). While `ggplot2` is highly recommended over base `R` in most cases, its useful to build on our basic understanding of computation in `R` in order to expand our toolbox. Importantly, many of the programming tools and syntax we have covered to this point are also used in plotting and visualization in base `R`. We are just translating the logic from a primarily numeric context to a visual one.
+
+So, today, we will work on building some widely used, descriptive plots in base `R` (i.e., loading no packages): 
+
+1. Scatterplots
+2. Line plots
+3. Bar plots
+4. Histograms
+5. Pie charts
+6. Correlation plots
+
+We will conclude by walking through an applied case of when base `R` was used to build out a plot in one of my papers to demonstrate the value of plotting in base `R` in an applied, "real-world" research context. For this, you will need to download the sample dataset from the course page, `pip.csv`.
+
+### Plotting in Base `R`
+
+```{R eval = FALSE, echo=TRUE}
+## SCATTERPLOTS
+# Basic scatterplot: mpg by wt
+plot(mtcars$mpg, mtcars$wt, col = "red", pch = 19, cex = .7)
+# col - color
+# pch - point type
+# cex - point size
+# type - both, line, point, steps, etc.
+# lty - line type (solid, dashed, etc.)
+
+# Adding a title (2 ways)
+plot(mtcars$mpg, mtcars$wt, col = "red", pch = 19, cex = .7,
+     main = "Basic Scatterplot: MPG by Weight")
+
+# Overlaying with "title"
+plot(mtcars$mpg, mtcars$wt, col = "red", pch = 19, cex = .7)
+title(main = "Basic Scatterplot: MPG by Weight", col.main = "Blue")
+
+# Label axes
+plot(mtcars$mpg, mtcars$wt, col = "red", pch = 19, cex = .7,
+     main = "Basic Scatterplot: MPG by Weight",
+     xlab = "Miles Per Gallon",
+     ylab = "Weight")
+
+# change axis limits
+plot(mtcars$mpg, mtcars$wt, col = "red", pch = 19, cex = .7,
+     ylim = c(0,6),
+     xlim = c(0,40),
+     main = "Basic Scatterplot: MPG by Weight",
+     xlab = "Miles Per Gallon",
+     ylab = "Weight")
+
+
+## LINE PLOTS
+## Let's build out a plot from scratch
+# First, define 2 objects - female height (ht.f) and male height (ht.m)
+ht.f <- c(1, 3, 6, 4, 9)
+ht.m <- c(2, 5, 4, 5, 12)
+
+# Calculate range from 0 to max value of ht.f and ht.m
+ht.range <- range(0, ht.f, ht.m)
+
+# Start with female heights, on a plot ranging from min to max height
+# Note: turn off axes and axis labels so we can specify them later
+plot(ht.f, type="l", col="darkgray", ylim=ht.range, 
+     axes=FALSE, ann=FALSE)
+
+# make x axis time (year) so we can plot heights over time
+axis(1, at = 1:5, lab = c("1900", "1920", "1940", "1960", "1980"))
+
+# Make y axis with horizontal labels that display ticks evenly spaced every 4 marks
+axis(2, las = 1, at = 4 * 0:ht.range[2])
+
+# Create box around plot
+#box()
+
+# Graph ht.m with red dashed line and square points
+lines(ht.m, type="l", lty=2, col="black")
+
+# Create a title with a red, bold and italic font
+title(main = "Female vs. Male Height\nOver Time", 
+      col.main = "black", font.main = 4)
+
+# Label the x and y axes with black text
+title(xlab = "Year", col.lab = "black")
+title(ylab = "Height", col.lab = "black")
+
+# Create a legend at (1, ht.range[2]) that is slightly smaller 
+# (cex) and uses the same line colors and points used by 
+# the actual plots 
+legend(1, ht.range[2], c("Female Height", "Male Height"), cex=0.8, 
+       col=c("darkgray","black"), lty=1:2)
+
+
+
+## BAR PLOTS
+
+# simple bar plot
+barplot(mtcars$mpg)
+
+# simple data object
+data <- table(mtcars$cyl, mtcars$gear)
+
+# stacked bar plot
+barplot(data, main="Counts of Cars by Cylinders & Gears",
+        xlab="Number of Gears", 
+        col=c("lightgray","darkgray", "black"),
+        legend = c("4 Cyl", "6 Cyl", "8 Cyl"))
+
+# sorted bar plot (beside = TRUE)
+barplot(data, main="Counts of Cars by Cylinders & Gears",
+        xlab="Number of Gears", 
+        col=c("lightgray","darkgray", "black"),
+        legend = c("4 Cyl", "6 Cyl", "8 Cyl"), 
+        beside=TRUE)
+
+
+## HISTOGRAMS
+
+# Simple histogram
+hist(mtcars$mpg, col="lightblue")
+
+# clean it up a bit
+hist(mtcars$mpg, 
+     col = heat.colors(mtcars$mpg), 
+     breaks = 15, 
+     main = "Simple Histogram: MPG", 
+     las = 1)
+
+
+## PIE CHARTS
+
+# Define height vector with 5 values
+height <- c(1, 3, 6, 4, 9)
+
+# Create a pie chart for height
+pie(height)
+
+# Define height vector with 5 values
+height <- c(1, 3, 6, 4, 9)
+
+# Create a pie chart with defined heading and
+# custom colors and labels
+pie(height, main="Female Height Over Time", col=rainbow(length(height)),
+    labels=c("1900","1920","1940","1960","1980"))
+
+# Define height vector with 5 values
+height <- c(1, 3, 6, 4, 9)
+
+# Define some colors from the gray scale
+colors <- c("white","grey70","grey90","grey50","black")
+
+# Calculate the percentage for each year, rounded to one decimal place
+ht.labels <- round(height/sum(height) * 100, 1)
+
+# paste a '%' after each value
+ht.labels <- paste(ht.labels, "%", sep="")
+
+# plot a pie chart with defined heading and custom colors and labels
+pie(height, main="Female Height Over Time", col=colors, labels=ht.labels,
+    cex=0.8)
+
+# Create a legend at the right   
+legend(1, 1.025, c("1900","1920","1940","1960","1980"), cex=0.8, 
+       fill=colors)
+
+
+## CORRELATION PLOTS
+# Quick viz of correlations using "pairs" command
+pairs(~ mpg + wt + disp + hp, mtcars)
+
+
+## FINAL APPLIED EXAMPLE
+# Here is an example from my work...
+pip <- read.csv(file.choose())
+
+## Party & IDX
+plot(pip$idx, pip$PIP.std, xlab = "Ideological Extremity", ylab = "Standardized PIP Scores", 
+     pch=16, col=ifelse(pip$Party.PR==200, "black", "dark gray"),
+     main = "Partisan Issue Prioritization by\nIdeological Extremity & Partisanship")
+abline(lm(pip$PIP.std~pip$idx), col="dark red", lty=1)
+lines(lowess(pip$idx, pip$PIP.std), col="dark blue", lty=2)
+legend("topright", inset=.05,
+       c("Fit","Lowess", "Republican", "Democrat"), 
+       fill=c("dark red", "dark blue", "black", "dark gray"), lty=c(1,2, 0,0), cex=.70)
+```
