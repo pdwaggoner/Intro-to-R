@@ -5,7 +5,7 @@ library(tm)
 # For plotting
 library(ggplot2)
 
-# For getting data directly from Kenneth Benoit's GitHub
+# For getting data directly from Benoit's GitHub
 library(devtools)
 library(quantedaData)
 
