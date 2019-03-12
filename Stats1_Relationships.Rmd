@@ -1,0 +1,190 @@
+---
+title: "Statistics: Simple Numerical Relationships"
+author: | 
+  | Philip Waggoner
+  | College of William & Mary
+  | pdwaggoner@wm.edu
+#date: "9/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Preface
+
+In statistics, we are interested in estimating relationships between concepts of interest. There is a lot wrapped up in this definition, but in the coming weeks, we will be focused more on estimating the relationships rather than measurement of concepts. Measurement is very important, and we will touch on it a bit. But the broader goal is for you to expand your toolbox of useful and substantive methods in `R` specifically. So we will survey many popular methods in the coming classes. 
+
+Today, we start at the ground level are explore the following three simple, yet widely used methods to give us traction on assessing the nature of relationships between concepts of interest: 
+
+1. Contingency Tables (and Visuals)
+2. Chi-squared tests
+3. T-tests
+
+In the coming weeks we will build on these simple methods for hypothesis testing, and explore more complex methods including OLS regression (bivariate and multiple), binary responses models (mostly logit and probit), and event count models (mostly Poisson and negative binomial regression). Though the methods vary widely dependent on the type of data in question, the same principles apply, which all flow from the "hypothesis testing framework": _Can we reject the "null hypothesis of no effect" given the data we observe, or not?_ 
+
+### Contingency Tables (and Visuals)
+
+For this first section, we will use a data set which is a sample of 20,000 respondents from the _Behavioral Risk Factor Surveillance System_ (BRFSS) from 2000. See more at <www.cdc.gov/bfrss>. 
+
+Let's begin with the simplest method for exploring relationships: contingency tables. These require your response variable take on a small set of values distributed across other variables of interest to aid in looking for associations between concepts of interest. We will look at a few including: `smoke100` (whether the respondent has smoked more than 100 cigarettes during his or her lifetime), `gnhlth` (whether respondent perceives own health to be excellent, very good, good, fair, or poor), `gender`, `weight`, `height`, and we will create a few variables based on other variables (e.g., `BMI`).
+
+Useful commands for creating contingency tables in `R` include: `table`, `prop.table`, and also visual tools (e.g., histograms, barplots, and pie charts). We will use all of these below. Let's work through a few examples.
+
+```{R eval=FALSE, echo=TRUE}
+
+# Start by clearing your environment
+rm(list=ls())
+
+# Load the data & set wd
+source("http://www.openintro.org/stat/data/cdc.R")
+setwd("YOUR WD HERE")
+
+## First, smoking and health (relationship between conditional and unconditional distributions)
+attach(cdc)
+
+table(smoke100)
+table(gender, smoke100)
+mytable <- table(smoke100, genhlth)
+mytable
+
+prop.table(mytable, 1) # percentages instead of frequencies; 1 = row % 
+prop.table(mytable, 2) # (2 = column %)
+
+# Now, height and weight instead of smoking
+m.cdc <- subset(cdc, cdc$gender == "m")
+f.cdc <- subset(cdc, cdc$gender == "f")
+
+par(mfrow = c(2,1)) # rows, columns
+hist(m.cdc$weight, seq(50,500,25), main="") # begin at 50, end at 500, by 25 "units"
+hist(f.cdc$weight, seq(50,500,25), main="")
+
+par(mfrow = c(1,1))
+plot(jitter(m.cdc$height), m.cdc$weight)
+plot(jitter(f.cdc$height), f.cdc$weight)
+
+f.cdc$bmi <- 703 * (f.cdc$weight / (f.cdc$height^2)) # BMI calculation for female respondents
+hist(f.cdc$bmi, seq(12.5, 74.5, 2)) # recall syntax: 'from', 'to', 'by'
+
+underweight <- ifelse(f.cdc$bmi < 18.5, 1, 0) 
+regular <- ifelse(f.cdc$bmi >= 18.5 & f.cdc$bmi < 25, 1, 0)
+overweight <- ifelse(f.cdc$bmi >= 25 & f.cdc$bmi < 30, 1, 0)
+obese <- ifelse(f.cdc$bmi >= 30, 1, 0)
+
+f.cdc$bmiclas <- underweight + 2*regular + 3*overweight + 4*obese
+f.cdc$fbmiclas <-factor(f.cdc$bmiclas,levels=1:4)
+
+levels(f.cdc$fbmiclas) <- c("under", "regular", "over", "obese")
+
+contingency <- table(f.cdc$fbmiclas, f.cdc$genhlth)
+
+prop.table(t(contingency),2)
+barplot(prop.table(t(contingency),2), legend.text=colnames(contingency))
+barplot(prop.table(t(contingency),2), beside=T)
+
+# Conditional contingencies as pie charts
+par(mfrow=c(2,2))
+slices <-c("white","grey75","grey50","grey25","black")
+pie(contingency[1,], main="underweight", col=slices)
+pie(contingency[2,], main="regular", col=slices)
+pie(contingency[3,], main="overweight", col=slices)
+pie(contingency[4,], main="obese", col=slices)
+```
+
+### Chi-square tests
+
+For the second section on chi-square tests, we will use a different dataset that we will create to allow us to examine whether students of different ethnic backgrounds are equally likely to be suspended from school. The data are based on school data from the largest public school district in Houston, the Houston Independent School District (HISD).
+
+The chi-square test is a test of the degree to which the columns in a contingency table deviate from the pattern established by the whole table. That is, if 17% of all students are suspended, then 17% of white students, 17% of black students, 17% of Latino students, and so on, should be suspended. A large enough deviation from this pattern violates the assumption that ethnicity (or the "contingent" factor) is irrelevant.
+
+To calculate a chi-square test, take the proportion generated by the marginal values and then generate expected cell frequencies based on that. The chi-square test is the cell-by-cell sum of the squared differences between the observed and expected cell frequency, divided by the expected cell frequency. Thus, it tests the degree to which an individual deviates from the aggregate. To rephrase, if 17% of students are suspended, then we should expect 17% of _each_ ethnicity suspended as well. If there is a significant result (p < 0.05), then we can conclude that differences between observed and expected (17%) is larger than expected due to chance alone. This means, in substantive terms, that ethnicity matters in determining (and analyzing) suspensions. The command is simply, `chisq.test`, with a table as its input. Let's work through this case.
+
+```{R eval=FALSE, echo=TRUE}
+
+# Start by clearing your environment and resetting the plot pane
+rm(list=ls()); par(mfrow=c(1,1))
+
+## First, create the data and store 
+susp.h <- c(39, 114, 19980, 15681, 16, 168, 904)
+enrl.h <- c(483, 7394, 53238, 131004, 204, 1857, 17372)
+barplot(susp.h/enrl.h, names.arg=c("Indian", "Asian", "Black", "Latino", "Pacific", "Multiple", "White"))
+
+nots.h <- enrl.h - susp.h
+table.h <- cbind(susp.h, nots.h)
+rownames(table.h) <- c("Indian", "Asian", "Black", "Latino", "Pacific", "Multiple", "White")
+colnames(table.h) <- c("Suspended", "Not")
+ftable(table.h) # create a COUNT-based contingency table
+
+# Sum up by column
+margin.table(table.h, margin = 2)
+
+# Run the test
+chisq.test(table.h) 
+
+# Do we reject the null of independence between etthnicities? Or do we fail to reject, suggesting ethnicity matters in suspensions?
+```
+
+### T-tests
+
+T-tests are very powerful, yet simple methods for evaluating whether patterns we observe are due to chance alone (i.e., the null hypothesis testing framework). Importantly, we can estimate t-tests for single populations (against some global mean, mu), or across two/multiple populations (i.e., comparing differences between group means). The latter case is sometimes referred to as a difference of means test. There are some other extensions of t-tests in statistics, but given our goal, we will focus on one-sample and then two-sample t-tests.
+
+For this section, we will use a sample of 24 breakfast cereals, 12 of which are "intended" for children, 12 of which are "intended" for adults. There are five nutritional variables coded: `Grams` (the number of grams per serving), `Calories` (the number of calories per serving), `Sodium` (the milligrams of sodium per serving), `Dietary Fiber` (the grams of fiber per serving), and `Sugar` (the grams of refined sugar per serving). These data were collected from <www.nutritiondata.com>. Let's begin with our exercise.
+
+First, we can form the null hypothesis that children's cereals on average contain 4 grams of sugar per serving. Our alternative hypothesis can be either nondirectional (i.e., the average children's cereal contains some other number than 4 grams) or directional (i.e., the average children's cereal contains more than 4 grams of sugar per serving). So for a two-tailed test, let's say we wanted to test the hypothesis that the population mean of cereal sugar > 4, as opposed to not equal to 4. (Note: we can test for direction hypotheses using the `alternative=c("TEST HERE")` argument, with values of either `less` or `greater`).
+
+```{R eval=FALSE, echo=TRUE}
+
+## One-sample t-test
+cereal <- read.csv(file.choose())
+attach(cereal)
+
+# first manually calculate to see what is going on
+t <- (mean(Sugar) - 4) / (sd(Sugar) / sqrt(length(Sugar)))
+t # t statistic
+
+# now using R's command
+t.test(Sugar, mu = 4)
+```
+
+Now, let's say we were interested in moving to the next step, beyond comparing a single group mean to a hypothetical baseline (4, in the previous example), but comparing mean sugar content between adult and children cereals to see if they statistically distinct from each other or not. We would follow a similar process, but update our code just a bit. Let's see for two-sample (or pooled, or Welch's) t-tests below.
+
+```{R eval=FALSE, echo=TRUE}
+
+## Two sample t tests: first manually calculate to see what's going on, then using R's command
+# first, attach the data and recode
+attach(cereal)
+children <- cereal[Intended.for == "Children", ]
+adults <- cereal[Intended.for == "Adults", ]
+
+# examine the distributions
+par(mfrow=c(2,1))
+hist(children$Sugar, seq(0,16,2), main="") # remember the syntax for sequence: 'from', 'to', 'by'
+hist(adults$Sugar, seq(0,16,2), main="")
+par(mfrow=c(1,1)) # reset our plot window
+
+# store the mean, sd, n and manually calculate pooled (Welch's) t-test
+m1 <- mean(children$Sugar); s1 <- sd(children$Sugar); n1 <- length(children$Sugar)
+m2 <- mean(adults$Sugar); s2 <- sd(adults$Sugar); n2 <- length(adults$Sugar)
+diff.means <- m1 - m2
+se.welch <- sqrt((s1^2 / n1) + (s2^2 / n2)) 
+t.welch <- diff.means / se.welch # welch's t test - pooled, better for small samples like this
+
+A <- s1^2 / n1
+B <- s2^2 / n2
+df.welch <- (A+B)^2 / (A^2 / (n1 - 1) + B^2 / (n2 - 1))
+t.critical <- qt(0.975, df.welch)
+p <- 2 * (1 - pt(t.welch, df.welch)) # is this significant or not? What does this tell us?
+
+# now in R -- two ways to do the same thing (comparing two group means)
+t.test(children$Sugar, adults$Sugar)
+t.test(cereal$Sugar ~ cereal$Intended.for)
+
+# So, do we reject the null that the two cereals are the same on sugar content? Or are they statistically different from each other?
+```
+
+### Concluding Remarks
+
+We have examined three very common methods for assessing statistical relationships between concepts of interest. Specifically, we covered contingency tables and visualizations, the Chi-squared test, and one- and two-sample t-tests (both one- and two-tailed versions as well). These are especially valuable methods in contexts where parameters are known, or in experimental contexts, which comprise a great (and increasing) amount of social science research. For example, the t-test requires relatively few assumptions about the underlying data generating process. Thus, in experiments especially, it is much more statistically principled to estimate a simple t-test, rather than a complex multilevel model carrying with it a ton of additional assumptions. In short, though simple, these are still quite valuable tests under the appropriate conditions and with the appropriate types of data.
+
+Also, it is worth noting that all of these methods can be linked to the broader null hypothesis testing framework, which characterizes the bulk of modern frequentist statistics. Thus, we will continue to build on these concepts of significance, probabilities, variance, mean values, and so on in the coming weeks, but with more complex models that are appropriate for different data contexts. Yet, remember this is not a statistics class, so we will continue to focus our efforts on applying these common methods of statistical analysis in `R`. 
