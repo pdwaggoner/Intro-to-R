@@ -1,0 +1,123 @@
+---
+title: "Statistics: Event Count Models"
+author: | 
+  | Philip Waggoner
+  | College of William & Mary
+  | pdwaggoner@wm.edu
+#date: "9/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Preface
+
+Continuing with the broad "hypothesis testing framework", _Can we reject the "null hypothesis of no effect" given the data we observe, or not?_, we have covered basic numeric relationships, OLS regression, and binary choice models (logistic regression and probit regression). The main differences between these models is the form of the dependent variable. We use OLS for continuous DV's and binary models for binary DV's (e.g., 0/1, yes/no). 
+
+Today, then, we will consider another form of a DV, which is the occurence of an event. This can be thought of as a blend of binary and continuous data types. Essentially, with event count data, we are interested in estimating the likelihood of an event occuring or not (binary) across many possible occurences (continuous). Though subtle, there is a distinct underlying data generating process for event count data compared to continuous or binary data. This is proven in the King (1988) pieces I posted on blackboard. Read that if you haven't already and it will make this case well, in addition to proving and demonstrating this mathematically. 
+
+Thus, the two main models for estimating event counts are: Poisson regression (PRM) and negative binomial regression (NBRM). We start with the PRM almost always, because it is most statistically elegant, estimating only one parameter, $\lambda$, which is assumed to be the underlying driver causing the event to occur. If there is nonconstant error variance, or "heteroskedasticity", or "overdispersion", then we would opt for a slightly more complex model, the NBRM.
+
+In today's class, then, we are concerned with fitting and interpreting PRMs, testing for overdispersion, and then fitting and interpreting NBRMs. Importantly, we talk about the output now in terms of _predicted counts_. 
+
+The data file (`scotus.dta`) used includes data on Congressional acts overturned by the Supreme Court (exercising judicial review), from the 1st through the 104th Congresses (1789-1996). The dependent variable (`nulls`) is the number of Congressional acts overturned by the Supreme Court during that Congress. Substantively, we use this dataset to examine whether the Supreme Court can function as a counter-majoritarian institution. Also included in the data are four other variables: `congress`, a counter for the number of the Congress; `tenure`, a variable indicating the mean number of years served by justices sitting on the Court during that Congress; `unified`, a variable coded 1 if both houses of Congress are controlled by the same political party and 0 otherwise, and `PartyDisagreement`, an indicator of how politically "close" the Supreme Court is to Congress, calculated as $|Democratic \% in Congress_i − Democratic \% on the Supreme Court_i|$.
+
+### Getting familiar with the Data
+
+The code below produces a figure that shows the counts of SCOTUS overturns of Congressional acts. The first panel shows the distribution of counts under divided government. The second panel shows the distribution of counts under unified government. The bottom panel shows the distribution based on the full sample.
+
+```{R eval = FALSE, echo=TRUE}
+# load some packages/libraries first
+library(AER) # for dispersion test
+library(foreign) # for stata data
+library(ggplot2) # for ggplot2 graphics
+library(MASS) # for NBRM
+
+# Read in the data
+courtdata<-read.dta(file.choose())
+
+# Numeric description
+summary(courtdata)
+
+# Visual description of DV
+ggplot(courtdata, aes(nulls, fill = unified)) + 
+  geom_histogram(binwidth = 1) +
+  theme_bw() +
+  facet_grid(unified ~., margins = TRUE, scales = "free") +
+  labs(x="Number of Congressional Acts Overturned by the Supreme Court",
+       y="Count")
+```
+
+### Fitting the PRM
+
+Because the dependent variable nulls measures counts of acts overturned, we consider the PRM as a proper model specification. We use the `glm()` function again, but here to estimate a PRM. The code below fits the model and displays the output tenure.
+
+```{R eval = FALSE, echo=TRUE}
+model1 <- glm(nulls ~ tenure + unified + PartyDisagreement, 
+              data = courtdata, 
+              family = poisson); summary(model1)
+```
+
+We can see here that `tenure` has a positive and significant effect on the number of Congressional acts overturned by the Supreme Court. `PartyDisagreement` has a significant and negative effect on the number of judicial overturns.
+
+### Testing for Overdispersion
+
+A key assumption of the PRM is equidispersion, that is the equality between mean and variance (or where disersion of the data is constant and equal to 1). Overdispersion often occurs in empirical applications. The function `dispersiontest()` in the `AER` package tests equidispersion against the alternative overdispersion (i.e., a hypothesis test for the assumption). A significant p-value means rejection of null, which is equidispersion. It compares the null of equidispersion with alternative, that dispersion is greater than one, which is a violation of the equidispersion assumption, meaning there is indeed overdispersion in the data and our estimates are likely skewed. Check for it here:
+  
+```{R eval = FALSE, echo=TRUE}
+dispersiontest(model1)
+```
+
+The test shows that the true dispersion parameter is greater than 1, and is significant at the p < 0.05 level (specifically, 0.02207 here). The estimated dispersion parameter is 2.327. TIn short, we have evidence that there is overdispersion.
+
+### The Negative Binomial Regression Model (NBRM)
+
+When over dispersion occurs, the negative binomial regression model (NBRM) is preferred to the PRM. In `R`, tools for estimating a NBRM are provided by the `MASS` package. We will use the function `glm.nb()`. Essentially, an NBRM adds a "random effects" parameter to model the overdispersion (anything over the 1) on its own, and then fits the original parameter, $\lambda$, as well. Thus it is slightly more complex, estimating an additional parameter, but it is nonethless useful for overdispersed data. The following code fits the count model, and then displays the output.
+
+```{R eval = FALSE, echo=TRUE}
+model2 <- glm.nb(nulls ~ tenure + unified + PartyDisagreement, 
+                 data=courtdata); summary(model2)
+```
+
+Notably, the NBRM context doesn't change condition mean, but rather adjusts for variance component by adding that random effect parameter to pick up hetergeneity in the variance. When we run the code, we observe that the coefficient of `tenure` is greater in the NBRM than that in the PRM. As for the coefficient of `PartyDisagreement`, the NBRM produces a coefficient with greater size than that produced by the PRM.
+
+Importantly, we now have two models that are getting at the same thing. We can compare fit directly by comparing each model's ability to maximize the log-likelihood. In other words, which is more descriptive powerful, as we alreayd know the NBRM is more statistically efficient given the presence of overdisperion. To do so, we use the `lrtest` command. Comparison is always comparing alternative model specification with the null of the baseline (or first) model.
+  
+```{R eval = FALSE, echo=TRUE}
+lrtest(model1, model2)  
+```
+
+Here, we are looking for the model that produces a smaller _absolute_ value of log-likelihood, and also whether the distinction is statistically significant. So what do we see?
+
+### Substantive Interpretation
+
+There are a variety of ways for substantive interpretation of count models (e.g., incidence rate ratios (like odds ratios but for counts), marginal effects plots (partial derivatives), and so on). The most common and simplest to intepret, though, is the predicted counts. Its the same logic as predicted probabilities, but here were are concerned with how the predicted counts of acts overturned by SCOTUS changes across the range of some variable. For our demonstration, we will plot these against the range of tenure on the court, holding all other variables contsant at their mean values. Substantively, we are interested in asking: _Does the longer justices sit on the court influence whether they will overturn more or less Congressional acts?_
+
+Let's generate out-of-sample predicted counts using similar code as last time for binary predicted probabilities:
+
+```{R eval = FALSE, echo=TRUE}
+# Create the "simulated" data to be used for the out of sample predictions
+newdata <- data.frame(tenure = seq(0, 20, length = 20),
+                      PartyDisagreement = mean(courtdata$PartyDisagreement),
+                      unified = mean(courtdata$unified))
+
+# Generate predicted values based off NBRM ("model2")
+newdata1<- cbind(newdata,predict(model2, newdata, type = "response",se.fit=TRUE))
+
+# Create CIs
+newdata1 <- within(newdata1, {
+  LL <- fit - 1.96 * se.fit
+  UL <- fit + 1.96 * se.fit
+  meancounts <- fit
+})
+
+# Now generate the plot using ggplot2 graphics
+ggplot(newdata1, aes(x = tenure, y = meancounts)) +
+  geom_point(color = "red") +
+  geom_errorbar(aes(ymin = LL, ymax = UL), color = "gray", size = 0.6, width = 0.3) +
+  theme_bw() +
+  labs(x = "Tenure",
+       y = "Predicted Counts")  
+```
