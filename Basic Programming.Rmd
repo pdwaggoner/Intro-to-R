@@ -1,0 +1,346 @@
+---
+title: "Basic Programming in R"
+author: | 
+  | Philip Waggoner
+  | College of William & Mary
+  | pdwaggoner@wm.edu
+#date: "9/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Preface
+
+Today, we are focused on introducing you to the basics of programming in `R`. We will cover a variety of tools and syntactic choices in `R` to widen and deepen your `R` toolbox, driving toward the ultimate goal of making our way up the steep `R` learning curve. Today will be much more mechanical and significantly less applied. 
+
+### First, A Quick Review
+
+Recall, last time we met, we discussed a variety of tools to manage or "wrangle" data, in both base `R` as well as the Tidyverse. Specifically, we explored subsetting data, creating and deleting variables from data frames, sorting data based on multiple conditions, recoding variables, and also merging data. These are widely used methods for managing and cleaning often unwieldy data that characterize the social sciences, whether in or out of academia. 
+
+But as we learned these tools, we used a variety of logical expressions, operators, and characters that may have been unfamiliar. Further, we may have also made our lives a bit harder by repeating steps over and over, or by taking large chunks of code to do things in a relatively inefficient manner.
+
+As such, today, we are going to build on what we did last class, by introducing you to the basics of programming in `R`. This will hopefully help you in material we cover in the weeks to come (e.g., statistical analysis, data visualization, natural language processing, and so on), as well as allow you to revisit some stuff we hvae covered to this point and do it more efficiently. At a minimum, today is designed to get you even more comfortable with the syntax and langague of `R`.
+
+### Operators
+
+First, let's review relational operators. These are operators that specify relationships between objects, unsurprisingly. The main relational operators are:
+
+1. `<`: less than
+2. `>`: greater than
+3. `<=`: less than or equal to
+4. `>=`: greater than or equal to
+5. `==`: equal (identical) to
+6. `!=`: not equal to
+
+Next, let's quickly review the main logical oeprators we will encounter most. They are:
+
+1. `!`: not  
+2. `&`: and
+3. `|`: or
+
+Note that the `!` operator appears in both lists of operators. This is because, on its own, it just means not, which is a logical expression. but combined with other operators, it can add its value, so to speak, to others (e.g., not equal to = `!=`).
+
+### `if` and `if else`
+
+`if` and `if else` are useful for a variety of operations in `R`, from testing certainl values or expressions, to writing packages and big chunks of code with conditional statements in them. They are very powerful tools in programming, and similar versions exist in all major programming languages.
+
+```{R eval=FALSE, echo=TRUE}
+
+## First, "if"
+
+# Proper syntax
+if (test_expression) {
+  statement
+}
+
+# Here is a simple example
+x <- 5
+if(x > 0){
+  print("Positive number")
+}
+
+## Next, "if else"
+
+# Proper syntax
+if (test_expression) {
+  statement1
+} else {
+  statement2
+}
+
+# Here is a simple example
+x <- -5
+
+if(x > 0){
+  print("Positive")
+} else {
+  print("Negative")
+}
+
+# Now redefine `x`, and test it again
+x <- 5
+
+if(x > 0){
+  print("Positive")
+} else {
+  print("Negative")
+}
+```
+
+### User Defined Functions
+
+Building on (and soon to incorporate) the logic of conditional statements using `if` and `if else`, we now shift to user-defined functions. These are similarly powerful tools to drastically streamline the programming process in `R`. They allow users to do a ton of stuff like automating and streamlining rote, redundant code and calculations. But the value of these is that they allow for consistent calculation for simple usage in the future. It is the same principle of preferring `sum(2,2,2,2)` in base `R` to the more laborious `(2 + 2 + 2 + 2)`. Though the tradeoff may seem minimal with the simple example, the value of writing functions to streamline code and calculations will quickly become apparent. Let's start.
+
+```{R eval=FALSE, echo=TRUE}
+
+# Proper syntax
+function_name <- function(argument) {
+  statement
+  return(output)
+}
+
+# Here is a simple example - squaring a value
+# Rather than typing: 
+(3^2) # run
+(4^2) # run
+(5^2) # run... and so on...
+
+# Try writing a function, allowing you to come back to this and use it time and again
+sq <- function(x) {
+  sqn <- x^2
+  return(sqn)
+}
+
+# Now call the function to see if it worked
+sq(2)
+
+
+# Let's complicate our example just a little bit, but allowing for greater flexibility
+exp <- function(x, y) {
+  expn <- x^y
+  return(expn)
+}
+
+exp(2,4)
+
+
+# Here is another complication, but allowing for a much more descriptive (and thus useful) function
+exp <- function(x, y) {
+  expn <- x^y
+  print(paste(x,"raised to the power", y, "is", expn))
+  return(expn) # optional 
+}
+
+
+
+# We can also assign "default values" in our functions, which are values you don't have to specify, but could change if you want
+# These default values also make the default value optional - let's see this
+exp <- function(x, y = 2) {
+  expn <- x^y
+  print(paste(x,"raised to the power", y, "is", expn))
+}
+
+# Now call a few versions of it
+exp(3)
+
+# or
+
+exp(3,1)
+```
+
+Now, let's build on what we have learned so far and update. Let's create a new function that calculates temperature in Celsius, given a value of fahrenheit. 
+
+```{R eval=FALSE, echo=TRUE}
+
+# First we define our function
+celsius <- function(f) {
+  c <- ((f - 32) * 5) / 9
+  return(c)
+}
+
+# Now we store some Fahrenheit values which we will use to test our function next 
+fahrenheit <- c(60, 65, 70, 75, 80, 85, 90, 95, 100) 
+
+# Finally, call the function for all values
+celsius(fahrenheit)
+```
+
+Further, we can even embed conditional logic we previously discussed (`if` and `if else`) into our functions to make them even more powerful, descriptive, and ultimately useful. 
+
+```{R eval=FALSE, echo=TRUE}
+
+# First, write the function
+pnz <- function(x) {
+  if (x > 0) {
+    n <- "Positive"
+  }
+  else if (x < 0) {
+    n <- "Negative"
+  }
+  else {
+    n <- "Zero"
+  }
+  return(n)
+}
+
+# Now call it for a variety of values to see if it is working properly
+pnz(4)
+pnz(5)
+pnz(-3)
+pnz(0)
+
+```
+
+Finally, we can also tell a function to `stop` if something is wrong/missing, or we can also print `warning` mesages if something is where it shouldn't be. Let's put all of these pieces together that we have learned so far and write a function to calculate the Herfindahl-Hirschman Index, which is a measure of concentration (often used as a proxy for competition). This is from an `R` package I have written called `hhi`, but it serves as a useful case study applying all of this logic. Let's start.
+
+```{R eval=FALSE, echo=TRUE}
+
+#' Calculate the Herfindahl-Hirschman Index
+#' 
+#'@usage hhi(x, "s")
+#'@param x Name of the data frame
+#'@param s Name of the vector (variable) from the data frame, x, corresponding with stored market share values
+#'@return hhi A measure of market concentration
+#'@note The vector of "share" values should be comprised of integers corresponding to total share of individual firms/actors (e.g., df$s <- c(35, 40, 5, 10, 6, 4) # 6 firms totaling 100 percent of the market). The measure is often used as a measure of competition, where 0 is perfect competitiveness and 10,000 is a perfect monopoly.
+#'@references Waggoner, Philip D. 2018. "The hhi Package: Streamlined Calculation and Visualization of Herfindahl-Hirschman Index Scores." Journal of Open Source Software 3(28), 828.
+
+hhi <- function(x, s){
+  if(!is.data.frame(x)) {
+    stop('"x" must be data frame\n',
+         'You have provided an object of class: ', class(x)[1])
+  }
+  shares <- try(sum(x[ ,s]))
+  if(shares < 100 | shares > 100) warning('shares, "s", do not sum to 100')
+  d <- x[ ,s]
+  if(!is.numeric(d)) {
+    stop('"s" must be numeric vector\n',
+         'You have provided an object of class: ', class(d)[1])
+  }
+  if (any(d < 0)) {
+    stop('vector "s" must contain only positive values')
+  }
+  hhi <- sum(d^2)
+  
+  return(hhi)
+}
+
+a <- c(1,2,3,4) # arbitrary firm id
+b <- c(20,30,40,10) # market share of each firm (should total 100% of market share)
+x <- data.frame(a,b) # create data frame
+
+hhi(x, "b") # calculate market concentration based on firms' share sizes
+```
+
+### `for` Loops
+
+Let's transition to `for` loops, which are a close relative of user-defined functions. Indeed, these are often used together, and can even be used to do similar things, with a few tweaks. We will see this in a moment. But let's start at the beginning. `for` loops allow for iterating some calculation or function over a bunch of different observations. So instead of typing out the same calculation line by line, while updating the main quantity of interest, you can just tell a `for` loop to do it for you (**pun not intended, but not regretted**). Let's see how this works in practice, starting with a simple case, beginning first by introducing the syntax as before, and then revisiting our temperature example.
+
+```{R eval=FALSE, echo=TRUE}
+
+# syntax
+for (value in sequence)
+{
+  statement
+}
+
+
+# basic - count even numbers in a vector
+fahrenheit <- c(60, 65, 70, 75, 80, 85, 90, 95, 100) 
+
+for (i in 1:length(fahrenheit)) { 
+  print(((fahrenheit[i] - 32) * 5) / 9)
+}
+```
+
+Pretty straightforward. It is a powerful programming tool that will significantly streamline your programming and make you think more efficiently in the process. 
+
+Now, let's see another example, but from politics and statistics. Let's say we drew a random sample of 30 respondents self-report ideology on a 7 point scale, where 1 was extremely liberal and 7 was a extremely conservative. The mean of that sample was 3.32. Here is the code setting this up:
+
+```{R eval=FALSE, echo=TRUE}
+
+sample.ideology <- c(3, 1, 2, 4, 4, 6, 1, 3, 2, 6, 1, 7, 3, 1, 4, 3, 4, 4, 1,
+                     6, 7, 5, 7, 1, 1, 3, 2, 4, 1, 7, 1, 2, 1, 4, 6, 3, 2, 3,
+                     1, 4, 1, 6, 3, 4, 5, 4, 1, 7, 2, 2)
+mean(sample.ideology)
+```
+
+Let's say then, that we want to simulate this sample mean a bunch of times for another project downstream (e.g., randomization distributions for statistical inference). But we weren't sure how many times to simulate, or how many sampling distributions to create. The central limit theorm and law of large numebrs can help us out here. So, to see the distribution of many samples and how the same and location of the distributions change, we can use a series of `for` loops, and plot the differences. Let's do that here.
+
+```{R eval=FALSE, echo=TRUE}
+
+sm1 <- rep(NA, 5)
+
+for(i in 1:5){
+  samp <- sample(sample.ideology, 30, replace = TRUE)
+  sm1[i] <- mean(samp)
+}
+
+sm2 <- rep(NA, 20)
+
+for(i in 1:20){
+  samp <- sample(sample.ideology, 30, replace = TRUE)
+  sm2[i] <- mean(samp)
+}
+
+sm3 <- rep(NA, 50)
+
+for(i in 1:50){
+  samp <- sample(sample.ideology, 30, replace = TRUE)
+  sm3[i] <- mean(samp)
+}
+
+sm4 <- rep(NA, 100)
+
+for(i in 1:100){
+  samp <- sample(sample.ideology, 30, replace = TRUE)
+  sm4[i] <- mean(samp)
+}
+
+sm5 <- rep(NA, 500)
+
+for(i in 1:500){
+  samp <- sample(sample.ideology, 30, replace = TRUE)
+  sm5[i] <- mean(samp)
+}
+
+sm6 <- rep(NA, 1500)
+
+for(i in 1:1500){
+  samp <- sample(sample.ideology, 30, replace = TRUE)
+  sm6[i] <- mean(samp)
+}
+
+sm7 <- rep(NA, 3500)
+
+for(i in 1:3500){
+  samp <- sample(sample.ideology, 30, replace = TRUE)
+  sm7[i] <- mean(samp)
+}
+
+sm8 <- rep(NA, 7000)
+
+for(i in 1:7000){
+  samp <- sample(sample.ideology, 30, replace = TRUE)
+  sm8[i] <- mean(samp)
+}
+
+
+par(mfrow=c(4,2))
+hist(sm1, main = "N=5", breaks = 30, col = "dark gray")
+hist(sm2, main = "N=20", breaks = 30, col = "dark gray")
+hist(sm3, main = "N=50", breaks = 30, col = "dark gray")
+hist(sm4, main = "N=100", breaks = 30, col = "dark gray")
+hist(sm5, main = "N=500", breaks = 30, col = "dark gray")
+hist(sm6, main = "N=1500", breaks = 30, col = "dark gray")
+hist(sm7, main = "N=3500", breaks = 30, col = "dark gray")
+hist(sm8, main = "N=7000", breaks = 30, col = "dark gray")
+```
+
+What do we see?
+
+### Concluding Remarks
+
+Today, we learned some of the core aspects of programming in `R`. Indeed, all of these techniques are borrowed from computer science (i.e., other languages) and adapted for the `R` language. For example, there are `for` loops (and also repeat and while loops) in Python, and different types of operators (e.g., logical) are used in virtually all programming languages. So, with these tools in your tool box, you can become a better, more efficient programmer, which will help you do a variety of tasks down the line, whether writing `R` packages or conducting your own research. 
