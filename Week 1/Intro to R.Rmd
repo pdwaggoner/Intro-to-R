@@ -1,0 +1,174 @@
+---
+title: "Getting Started with R and R Studio"
+author: | 
+  | Philip Waggoner
+  | College of William & Mary
+  | pdwaggoner@wm.edu
+#date: "9/6/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Welcome to the Wonderful World of `R`
+
+### Preface
+
+In this document, you will get a very high-level, quick introduction to the `R` language and programming environment (though I will focus on "Base `R`", I include some resources at the end on other approaches to data management in analysis in `R`, notably the so-called `Tidyverse`. More on that in a bit.). Before we start, this document was made using the document generator called `markdown` (or .Rmd). Its really useful for embedding code directly into documents to allow for interaction with `R` in a much more efficient, user-friendly manner. 
+
+### What is `R`?
+
+`R` is both a language and an "environment" where users can "do statistics". This includes so much from data visualization and exploratory analysis, to complex modeling and advanced computer coding. Though `R` is wonderfully flexible, fast, and efficient, the learning curve is pretty steep, as users must learn to "code", while also learning the substantive concepts as well. For example, in other programs such as Stata, to run a regression model, users simply need to type `regress y x`, and hit enter. Also in Stata, users can point and click, with little to no interface with the mechanics behind what is going on. This is both good and bad. It is good in that the learning curve is much gentler and accommodating. However, its not a great thing in that it restricts a lot of user interface with the process of coding and statistical analysis, in addition to the function fact that the field of political science is undoubtedly moving in the `R` direction.
+
+Therefore, though tricky to learn, if you go on to do anything related to data, whether working for an NGO, grad school, or even legal work in many cases, you will be glad you started with `R` and endured the hard, but vastly rewarding work up front. 
+
+### How to use `R`?
+
+It is undeniably daunting to open up `R` for the first time, and see a blank screen. Thus, I highly recommend the use of R Studio, which is a very user friendly interface with the language of `R`. In R studio you can do all kind of things, from practice writing code before running it, to writing function reports (like this one), to maybe someday hopefully writing and releasing your own packages. All of the can happen within R Studio. 
+
+### Where to obtain `R` and R Studio?
+
+Perhaps one of the best things about `R` is that it is _free_! Users simply need to go to the R-Project page, <http://www.r-project.org/>, to first download `R`. Then, once `R` is successfully installed, go to the R Studio page, <http://rstudio.com>, to download R studio onto your machine.
+
+Another option, if users don't want to download anything directly, simply use the R Studio cloud platform, <https://rstudio.cloud/> to directly interact with `R` anytime, anywhere.
+
+As a final note, `.Rmd` files mentioned at the beginning (like this one) can easily be generated _within_ the R Studio environment. Though there is much more on proper `.Rmd` syntax (e.g., see [here](https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)), you can give it a try by selecting the icon for creating a new document at the very upper left portion of the screen. Then, in the drop-down menu, select `R Markdown...`. It will populate the editor pane with a template including some basic sample code. And you're off!
+
+### Getting Started with `R`
+
+We have talked enough at this point _about_ `R` as a language as well as the benefits of it from our estimation. Now, let's start _using_ it. This brief tutorial should be sufficient to get you on your way to using `R`. 
+
+To begin, `R` operates by creating and manipulating objects. Before working with data, we can store things and then "call" those objects. Create an object using an "assignment operator" (e.g., "=", "<-", etc.) See a simple example:
+
+```{R eval=FALSE, echo=TRUE}
+number <- 1
+number
+```
+
+Note that the numeric value of 1 is stored in object `number`. 
+
+You can also create objects consisting of letters and/or words. This would be called a character object. For example
+
+```{R eval=FALSE, echo=TRUE}
+object <- "hello_world"
+object
+```
+
+You can see your created object by simply typing `object`. 
+
+Now that you have the basic idea, it should be noted that `R` can do so much more, including simple calculations. Importantly, `R` is also a giant, super-fast calculator. To access basic operations like addition, subtraction, multiplication, and division, simply use the standard operators `+`, `-`, `*`, and `/`, respectively. Also, You can use parentheses to group operations, and use the `^` symbol to raise a number to some power. You can also use `R` to calculate natural exponents, `exp(1)` and also natural logarithms, `log(2.718)`. A note on logs: it is simple to change the base of a logarithm. Simply call the `base` command within the expression, `log(50, base = 10)`.
+
+### Exploring Base `R`
+
+To this point, we have programmed everything ourselves. But it is important to note that `R` has a ton of built in functions to make life easier, such as using the `log` function we just explored (built in is simply referred to as "Base `R`"). For example, instead of adding something using the addition operator, `+`, you could use the `sum` function, such as:
+
+```{R eval=FALSE, echo=TRUE}
+sum(2,2)
+```
+
+This gives you the output `4`. 
+
+Further, you can store many things in objects called vectors using the `c` function. For example, 
+
+```{R eval=FALSE, echo=TRUE}
+sequence <- c(1,2,3,4,5)
+sequence
+```
+
+And if you didn't want to type out "1,2,3,4,5", you could use the `seq` function in Base `R` to do it for you, by leveraging the colon to tell it where to start and end. For example, 
+
+```{R eval=FALSE, echo=TRUE}
+sequence <- seq(1:5)
+sequence
+```
+
+This gives you the same output, `1 2 3 4 5`.
+
+Another important feature of `R` is binding, either columns or rows. The commands for these function is `cbind` and `rbind` respectively. This let's the user efficiently combine like-length vectors to create a dataframe (another really useful feature is the comment option using the pound sign `#`). For example,
+
+```{R eval=FALSE, echo=TRUE}
+numbers <- c(1,2,3,4,5) # vector of numbers
+letters <- c("a", "b", "c", "d", "e") # vector of letters; character values in quotes
+numbers.letters <- cbind(numbers, letters) #combine the vectors as columns
+numbers.letters # now take a look!
+```
+
+### (Very) Basic Plotting
+
+We have introduced the (extreme) basics of programming and object manipulation in `R`. Another key feature of manipulating objects is plotting these objects. Importantly, plots too, are considered objcts in `R`, and are created by layering multiple objects. Though the options for plotting are far too vast even for any single book to cover, let alone a cheat sheet like this, we will start with two simple, but commonly used plots to give you a taste of plotting in `R`: scatterplots and histograms. Like everything else to this point, only base `R` is required for everything we are about to cover (i.e., no need to load plotting packages, like `lattice` or `ggplot2`).
+
+First, create some simple, random data.
+
+```{R eval=FALSE, echo=TRUE}
+# Define two vectors of randomly sampled values from a uniform distribution in a given range
+vector1 <- runif(10, 60, 120) # generate vector of 10 ranom numbers sampled between 60 and 120 Call it "vector1"
+vector2 <- runif(10, 70, 110) # generate vector of 10 ranom numbers sampled between 70 and 110. Call it "vector2"
+```
+
+There are many distributions you can generate in `R` (e.g., normal (`rnorm`), binomial (`dbinom`), etc.). Also, note that the `runif` command generates _random_ values from a uniform distribution. Thus repeating the steps above to create more will necessarily generate a different set of values, and thus a different set of plots below. Now, with our random data created, let's start with a simple scatterplot using the `plot` command (we will add lines in the next example to create a line plot). 
+
+```{R eval=FALSE, echo=TRUE}
+# Plot vector objects against each other and add other layers for a prettier plot
+plot(vector1, vector2, # objects to plot
+     pch = 19, # changes the type of points on the plot
+     col = "blue", # changes the color; note it is a character vector to be used in quotes
+     main = "Scatterplot of Random Values", # title
+     xlab = "Vector 1", # x axis title
+     ylab = "Vector 2") # y axis title
+grid() # add a grid in the background for aesthetic purposes only
+```
+
+Great! You made your first plot. Easily update/change any of the arguments above to update your plot accordingly. _Note_: the `plot` command defaults to a scatterplot. To change this, add the arugment `type` to the function and specify a character relating to the desired plot (e.g., for a line plot = "l"; for stairsteps = "s"; for line and scatter = "b" (for both), and so on). See all options by searching for the base command `plot` in the help field in the viewing pane.
+
+Finally, let's turn to a simple histogram. For this, we will use the `mtcars` data pre-loaded in base `R` including a variety of variables, such as, miles per gallon, number of cylinders, etc. 
+
+```{R eval=FALSE, echo=TRUE}
+# Make a histogram (another way to visualize density) of the miles per gallon for all cars in `mtcars`
+hist(mtcars$mpg, # `hist` is the function for a histogram; then the object is first
+          breaks = 5, # number of bins in histogram
+          col = "blue", # update the color as before
+  	      main = "Histogram of MPG", # title as before
+          xlab = "Miles Per Gallon") # x axis title as before 
+```
+
+Running the code above, we can see the basic blue histogram of MPG from the `mtcars` package. There are so many other plotting options in `R` that we will get to in the coming weeks.
+
+### Exercises
+
+1. Create a vector with values ranging from 1 to 1000, increasing by 1, using the `seq` command. Now with the `c` function, and store these in the object `k`.
+
+2. Create a character vector with the words, "Here is my character vector".
+
+3. Plot the vector from question 1 using the basic `plot` function. What do you see?
+
+4. Plot the vector from question 2 using the basic `plot` function. What do you see?
+
+5. Now repeat question 1, but with a range from 5 to 25, increasing by 5, using each function, and store these in the object `five`.
+
+6. Plot the object in question 5 using the `plot` command.
+
+7. Square each value in your rpevious object `k`, and store them in a new object, `k.sq`.
+
+8. Take the natural log of the values in object `five`, and store them in a new object, `five.ln`.
+
+### Concluding Remarks
+
+I hope this very brief tutorial has been useful. If you get stumped, proceed in the following fashion (which are steps basically every `R` programmer takes):
+
+1. Google the error message or question (e.g., "How do I create a string variable in R?")
+2. Access online resources (e.g., "stack overflow")
+3. Use the "help" tab in the viewing pane and search for whatever you want
+4. Ask a friend
+5. Ask an expert (many people in many departments at W&M, e.g., Profs. Settle and/or Waggoner at SSRMC as a start)
+
+Most importantly, [Hadley Wickham](http://hadley.nz/) once [told me](https://www.r-bloggers.com/advice-to-young-and-old-programmers-a-conversation-with-hadley-wickham/) that every single `R` programmer gets frustrated all the time. This is a good sign because it means you are pushing yourself. Don't resist the frustration; embrace it and learn from it. Keep pushing yourelf, and it will certainly become more fun and much better every day you do! The only way to get better at `R` or anything for that matter, is practice and repitition. As a starting place, try to code at least 15 minutes everyday. If you don't know what to do, try Googling "complicated `R` code" and you will quickly be humbled and (hopefully) motivated to learn something new. Also, see the resources below for some next steps in programming in `R`.
+
+### More Resources
+
+1. [R Markdown](https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
+2. [Thomas Leeper's R Tutorial](https://thomasleeper.com/Rcourse/Intro2R/Intro2R.pdf)
+3. [The Tidyverse](https://www.tidyverse.org/)
+4. [R for Data Science (_Free_ Book on Tidyverse in R by the Tidyverse Creator)](http://r4ds.had.co.nz/)
+5. [Basic R Exercises (For Quick Practice)](https://www.r-exercises.com/)
