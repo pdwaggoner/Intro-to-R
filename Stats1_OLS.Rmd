@@ -1,0 +1,194 @@
+---
+title: "Statistics: Ordinary Least Squares Regression"
+author: | 
+  | Philip Waggoner
+  | College of William & Mary
+  | pdwaggoner@wm.edu
+#date: "9/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Preface
+
+Recall, last time we met we said subsequent weeks will build on the "hypothesis testing framework": _Can we reject the "null hypothesis of no effect" given the data we observe, or not?_ We will continue that this week, but in a more statistically principled way. Last week we touched on basic numerical relationships, which are valuable to help us understand the concepts moving forward. Thus, this week we will focus on ordinary least squares (OLS) regression. We will start with the bivariate case and expand to multiple regression, including polynomials, interactions, and other extensions, but all in the realm of basic regression. This will continue to build on our foundation so we can undertsand more complex methods in the comming weeks.
+
+We would decide to fit an OLS model for two reasons:
+
+1. The type of dependent variable we are seeking to explain is continuous (taking on values of more than 5 or so, though there are special cases we will cover in future weeks).
+
+2. Also, we assume things about our underlying data generating process that resulted in the data we actually observe. Notably, we assume normality, or normal distribution of our data. This can include a variety of core assumptions, often called Gauss-Markov assumptions. We won't go into them here, as we are focused on application, but consider reading more on these and the foundations of OLS [here](https://warwick.ac.uk/fac/soc/economics/staff/vetroeger/teaching/po906_week8910.pdf) and [here](http://statisticsbyjim.com/regression/gauss-markov-theorem-ols-blue/). 
+
+Ultimately, if the assumptions are met, then OLS is considered 'BLUE': the best, linear, unbiased estimator. Why 'best'? Minimizing variance with our model fit relative to other estimators. 'Linear' how so? For a one unit change in X, we observe a beta change in Y and further we can expect a relatively normal distribution of the errors (very, very simply defined). And what are we 'estimating'? Two parameters: alpha and beta. This is certainly an oversimplification of OLS and the assumptions, so I strongly encourage everyone to look more into this if you are unfamiliar at all with OLS or basic regression. From here, though, we will move on to discuss fitting OLS models, and then generating predicted outcomes as well as visualizing OLS results.
+
+### Fitting an OLS Regression
+
+The dataset you will use examines the effects of movie reviews on box-office receipts, called `Domestic`. It focuses on the career of actor Tom Cruise, who has had lead roles in 33 movies (plus supporting roles in 6 other movies) over the past 35 years. The variable that you will explain is domestic box office receipts (dependent variable). The key explanatory (independent) variable that you will use is the Rotten Tomatoes' "freshness" rating which summarizes how positively reviewers perceive the movie. The dataset also includes the `year` in which the movie was released, the `genre`, the MPAA `rating`, and Tom Cruise’s `character` and `role` in the movie.
+
+With our data in mind, let's start at a base level. To fit a simple OLS bivariate regression, we need a dependent (response) variable, here is box office receipts, at least one regressor (independent variable), and a data frame. From here, we can fit a model. But take note of the previous point 1, suggesting our DV needs to be continuous. There is a host of problems that could be introduced if we mismatch a model with a different type of DV (e.g., a binary DV (0,1), an event count, an ordinal scale, a multiple nomial category (no order, but multiple choice options), and so on). Thus, our DV should be continuous. Let's take a simple case.
+
+```{R eval=FALSE, echo=TRUE}
+
+# Start by clearing your environment
+rm(list=ls())
+
+# Load the data, subset for only leading roles, & set wd
+data <- read.csv(file.choose())
+leading <- data[data$Role == "Lead", ]
+
+setwd("YOUR WD HERE")
+
+# Now, let's inspect our data first
+counts <- table(leading$Rating)
+barplot(counts, ylab="Number", xlab="Rating") 
+
+boxplot(leading$Domestic ~ leading$Rating, horizontal=TRUE)
+
+plot(leading$Domestic ~ leading$Freshness, pch=19)
+```
+
+With our data inspected, let's now transition to fitting a simple model, predicting box office receipts (`Domestic`) as a function of reviews (`Freshness`). See the following code:
+
+```{R eval = FALSE, echo=TRUE}
+# Estimate and summarize the model
+reg.simple <- lm(Domestic ~ Freshness, data=leading); summary(reg.simple)
+```
+
+To interpret our model, we start with the beta coefficients, which are the effects we are actually estimating. We interpret as, "a one unit change in X causes a beta change in Y." Some more useful information is automatically generated in R when you fit a regression. See all of this, including model fit statistics (e.g., R^2, F-statistics, etc.) and individual level output (e.g., beta coefficients, intercept, etc.). 
+
+We can also visualize our model by plotting it and overlaying a "best fit" line, using the `abline` command in base `R`.
+
+```{R eval = FALSE, echo=TRUE}
+# Now visualize base model with fit line
+plot(leading$Domestic ~ leading$Freshness, pch=19); abline(reg.simple)
+```
+
+Now, we may worry about other effects, such as the MPAA rating, that may _also_ influence box office receipts. In such a case, we would want to update our model to account for this. This would be a multiple regression. To do so, simply add (yes, using the "+" oeprator) additional regressors. But, first, we should check and see if correlation is a problem. We do so like this:
+
+```{R eval = FALSE, echo=TRUE}
+# First, create a new categorical variable for our model
+leading$Rating.n[leading$Rating == "PG"] <- 1
+leading$Rating.n[leading$Rating == "PG-13"] <- 2
+leading$Rating.n[leading$Rating == "R"] <- 3
+
+# Now, check for correlations
+cor(leading$Freshness, leading$Rating.n)
+cor(leading$Domestic, leading$Rating.n)
+
+# Or visually...
+pairs(~ Domestic + Freshness + Rating.n, data = leading)
+
+# Now, we fit a multiple regression controlling for independent effects
+reg.multiple <- lm(Domestic ~ Freshness + Rating.n, data = leading); summary(reg.multiple)
+```
+
+Now, importantly, in multiple regression, we change our intepretation a bit. We are now talking about "controlling" for other factors. So the interpretation of a single beta coefficient is no longer "a one unit change in X causes a beta change in Y." Rather, it is now "a one unit change in X causes a beta change in Y, controlling for the effects of Z(s)." 
+
+Finally, we can interpret the model by also generating predicted values using the `predict` command, as follows:
+
+```{R eval=FALSE, echo=TRUE}
+predict(reg.multiple, data.frame(Freshness = c(33, 66, 100), 
+                                 Rating.n = mean(leading$Rating.n))) 
+```
+
+#### Extending and Complicating OLS Models
+
+We can do a lot of interesting extensions with some of the base relational and logical operators in `R`, in the context of regression modeling. Some of the more commeon extensions will be quickly covered here. First, we will cover estimating a model with an interaction term, and second we will cover the regression context of including a polynomial/quadratic function in the estimation. 
+
+##### Interaction Terms
+
+First, there are some contexts where we might expect "conditional" effects. These are instances where we expect different values of a given variable/concept to exert unique effects on the outcome variable, at different levels. For example, we may expect men and women of different income brackets to have distinct preferences on family planning policy. In such a case, we might "interact" gender with income to explain family planning policy preferences. In such a context, we simply multiple the variables together. Let's return to our Tom Cruise data to demonstrate. 
+
+```{R eval = FALSE, echo=TRUE}
+reg.inxn <- lm(Domestic ~ Freshness + Rating.n + 
+                 Rating.n*Freshness, # INXN term
+               data = leading); summary(reg.inxn)
+```
+
+We can see a slightly significant interactive relationship here, but it is negative, suggesting at each level of ratings and freshness, the box office receipts decrease. These are actually quite complicated to properly interpret. Thus, I highly recommend thoroughly reviewing this information from Matt Golder's site exclusively related to proper interpretation of interactive effects: <http://mattgolder.com/interactions>. But for now, I am just showing you how to do it and think about it. 
+
+Perhaps a more intuitive approach is to visualize the output. You could do this manually with a few lines of code, or you could use the `interplot` package, which leverages `ggplot2` graphics to produce simple, clean, and very nice interactive plots. Consider the following:
+
+```{R eval=FALSE, echo=TRUE}
+#install.packages("interplot")
+library(interplot)
+
+interplot(reg.inxn, "Rating.n", "Freshness") +
+          xlab("Movie Review ('Freshness')") +
+          ylab("Estimated Coefficient for Movie Rating") +
+          ggtitle("Estimated Effect of Movie Rating on Box Office Receipts\nby Freshness Score") +
+          theme_bw() +
+          geom_hline(yintercept = 0, linetype = "dashed") +
+          theme(plot.title = element_text(hjust = 0.5))
+```
+
+##### Polynomials
+
+Finally, another common extension of a regression model is to include a quadratic term or a polynomial, when you expect nonlinear effects dependent on specific values in X. For example, let's say we expected positive effects at one point and negative effects at another point of a variable. Think of a "laffer curve" here. To test this, we would fit a multiple regression model, but with a squared (quadratic) term using either the `poly` or `I` commands and specifying the power in parentheses. We will use the `mtcars` dataset here, as there aren't any reasonable expectations for quadratic terms in the `Cruise` data. See the following:
+
+```{R eval = FALSE, echo=TRUE}
+m1 <- lm(mpg ~ wt + I(wt^2), data = mtcars); summary(m1)
+```
+
+And we can fit a nonlinear line based on our polynomial regression using the following few simple lines of code:
+
+```{R eval = FALSE, echo = TRUE}
+attach(mtcars)
+
+plot(wt, mpg)
+lines(predict(lm(mpg ~ wt + I(wt^2))))
+```
+
+### Diagnosing a Regression Model
+
+There are many tools for diagnosing models. We will focus only on two, that are aimed at checking for pervasive and frustrating problems that plague many regression models. The problems we will check for are: multicollinearity and outliers/influential observations. The tests we will run, then, are: variance inflation factor (VIF statistics), DFBETA scores, and Cook's distance (visual tool).
+
+#### Multicollinearity
+
+First, for multicollinearity, this is when we have multiple regressors explaining a lot of the same variance in our dependent variable. Recall the main goal of regression is to explain as much unique variance in a response variable, with a parsimonious of a model as possible. Thus, when two variables are highly correlated, we run into a lot of overlapping variance being explained, or multicollinarity. This results in inefficiency as your model is chewing up more degrees of freedom (working harder), but for relatively little additional explanatory value or power. The most common test to check for this is to estimate variance inflation factor statistics for all variables in the model. Essentially, the test checks across every regressor in the full model, and checks for how much the variance of the model shifts when a vairable is included versus when it is excluded. The simplest statistic for variance is the R^2. Thus, the formula is $1/1-R^2_j$. The command from the `car` packages is quite simple: `vif()`, supplying the model as the input. Typically, values over 10 are considered problematic, though this ranges depending on who you talk to. Consider a larger multiple regression going back to the `Cruise` data:
+
+```{R eval = FALSE, echo=TRUE}
+reg.full <- lm(Domestic ~ Freshness + Rating.n + International + Year + as.factor(Genre),
+               data = leading); summary(reg.full)
+
+#install.packages("car")
+library(car)
+
+vif(reg.full)
+
+# Any problematic variables?
+```
+
+#### Influential Observations and Outliers
+
+Finally, we can check for outliers that may be exerting a great amount of leverage or pull on our fit line that explains the data. We can check for these by viewing a few plots based on calculations such as DFBETA scores and Cook's Distance We can also inspect residual vs. fitted value plots, and so on in base `R`. But a better more recent package deals with these methods and includes several others. We will use the package `olsrr` and a few functions to check for each of these methods. Let's start with DFBETA scores. DFBETAs check for the influence of each observation on the _parameter_ estimates, and plots the change in parameter (beta) size when each observation is deleted. 
+
+```{R eval = FALSE, echo=TRUE}
+reg.full <- lm(Domestic ~ Freshness + Rating.n + International + Year,
+               data = leading); summary(reg.full)
+
+#install.packages("olsrr")
+library(olsrr)
+
+ols_plot_dfbetas(reg.full)
+
+# Any problematic observations?
+```
+
+The Cook's distance caluclates the influence of each observation on the fitted (predicted) values. Let's see this with the `ols_plot_cooksd_chart()` command from the `olsrr` package:
+
+```{R eval = FALSE, echo=TRUE}
+ols_plot_cooksd_chart(reg.full) + 
+  geom_hline(yintercept = 0.121)
+
+# Any problematic observations?
+```
+
+### Concluding Remarks
+
+As with most topics we have covered so far, we have merely scratched the surface today. For example, you can use regressions to fit mediation models, when you suspect mediating effects (see, e.g., an `R` package I wrote on this: <https://github.com/pdwaggoner/purging>), or to do a host of other things. There are also many other diagnostic tests you could (and should) run when you run models and present results, such as studentized residual plots, leverage plots, e.g., `ols_plot_resid_lev()` from the `olsrr` package, and so on. 
+
+The bottom line is, in the applied research world, whether social sciences, natural sciences, data sciences, or some other context, you want to be honest and thorough in your research program and present the full scope of your process. This includes multiple iterations of models you ran, diagnostic test, and even alternative model specifications. Hopefully you now have a few more tools to take steps in this direction as it relates to applied research using `R`. Next week, we will hit binary response models. 
