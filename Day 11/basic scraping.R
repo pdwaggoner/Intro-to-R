@@ -1,12 +1,10 @@
-# Introduction to Computation in R
-# Professor Waggoner, pdwaggoner@wm.edu
 # Basic Webscraping in R
 
 # Load libraries (first, install)
 library(XML)
 library(RCurl)
 
-### FIRST: use RCurl to scrape and build a table from a url
+### FIRST: use RCurl to scrape and build a table from a url (adapted from Gelman's code)
 
 # Read in the wiki page for men's 1500 meter records
 wikipediaPage <- "https://en.wikipedia.org/wiki/1500_metres_world_record_progression"
