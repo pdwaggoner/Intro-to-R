@@ -1,0 +1,382 @@
+---
+title: "Data Visualization: `ggplot2`"
+author: | 
+  | Philip Waggoner
+  | College of William & Mary
+  | pdwaggoner@wm.edu
+#date: "9/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Preface
+
+Plotting results is arguably the most important part of presenting research. Major social science journals, such as the _American Journal of Political Science_, have issued recent statements strongly [recommending](https://ajps.org/guidelines-for-manuscripts/manuscript-preparation/) authors offer visual output in lieu of redundant numerical output whenever possible. Further, the importance of findings and novelty of design can be lost (or at best _limited_) if the researcher fails to offer simple, clear visualization of findings. 
+
+Given this importance in the "age of data science", today we are concerned with covering a move from "ugly" (or boring) plots discussed last class base `R`, to pretty (or exciting) plots using the powerful `ggplot2` package.
+
+### The Data and Preliminaries
+
+Let's start this comparison between base `R` and `ggplot2` by focusing on two of the most commonly used plots in social science research: histograms and scatterplots. For these applications, we use the `diamonds` dataset housed within the `ggplot2` package. The data include 53,940 observations across 10 variables: `carat`, `cut`, `color`, `clarity`,`depth`, `table`, `price`, `x`, `y`, and `z`. Run the line `?diamonds` to read more on each variable.
+
+To begin, start by loading the `ggplot2` library (be sure to first install `ggplot2` using the command `install.packages` if not already done) and then store the `diamonds` dataset in object `d` to make it easier to access. To get a feel for the data, generate some simple summary statistics for each variable in the data set using the `summary` command, as we have done many times, followed by the name of the dataset, `d`, in parentheses. 
+
+```{R eval = FALSE, echo=TRUE}
+library(ggplot2) # load the ggplot2 library to access the data
+d <- diamonds
+#summary(d)
+```
+
+### Histograms
+
+Let's say we were interested in observing the density of price of diamonds by cut. This is the perfect opportunity to generate and use a histogram. Using base `R`, we begin first by generating an "ugly" histogram of a diamond's price, with individual plots corresponding with each of the five levels of `cut`, from fair to ideal. See the clunky code below, resulting in a series of less-than-attractive histograms.
+
+```{R eval = FALSE, echo=TRUE}
+# First, subset the data by `cut` for individual histograms
+fair <- subset(d, cut == "Fair")
+good <- subset(d, cut == "Good")
+very.good <- subset(d, cut == "Very Good")
+premium <- subset(d, cut == "Premium")
+ideal <- subset(d, cut == "Ideal")
+
+# Next, generate the histograms using the `hist` command
+par(mfrow = c(3, 2)) # places all histograms in a single 3x2 Plot Pane
+hist(fair$price)
+hist(good$price)
+hist(very.good$price)
+hist(premium$price)
+hist(ideal$price)
+par(mfrow = c(1, 1)) # reset plot pane
+```
+
+This is "ugly" for many reasons, from lacking a title and axis lables and colors, to the layout and inefficiency of the code, and so on. We can make this pretty with the cleaner code leveraging `ggplot2`:
+
+```{R eval = FALSE, echo=TRUE}
+ggplot(d, aes(price, fill = cut))+ # objects of interest
+  geom_histogram(binwidth = 100) + # thickness of the bins (update as desired)
+  theme_bw() + # color scheme
+  facet_grid(cut ~ ., margins = TRUE, scales = "free") + # compiles histograms into single plot by cut 
+  labs(x="Price", # axis/plot labels
+       y="Density",
+       title = "The Price of Diamonds by Cut")
+```
+
+And finally, let's see another simple case, plotting the density of price as a histogram to see how things change when you update the bin size and colors. 
+
+```{R eval = FALSE, echo=TRUE}
+ggplot(data = d, mapping = aes(x = price)) +
+  geom_histogram(bins = 60, color = "white", fill = "steelblue") +
+  #theme_bw() + # color scheme
+  labs(x="Price", # axis/plot labels
+       y="Counts")
+```
+
+### Scatterplots
+
+Another very common plot choice in applied statistics and data analysis is the scatterplot, as discussed last class. This can be useful for a variety of tasks, from viewing simple distributions of variables to displaying relationships and predicted probabilities. As with histograms, there are less-than-pretty ways of creating these, and thus there are decidedly prettier ways of generating scatterplots. Using the diamonds data still, let's start with the base `R` version using the `plot` command.
+
+```{R eval = FALSE, echo=TRUE}
+plot(d$price, d$carat,
+     main = "The Price of Diamonds by Weight",
+     xlab = "Price",
+     ylab = "Weight (Carat)")
+```
+
+Though this produces a decent scatterplot showing an _descriptively_ positive relationship between `price` and `weight`, there are many additional parameters than can contribute to a prettier and more descriptive plot. As such, let's generate a simple `ggplot2` scatter plot with the command `ggplot` and some additional code below.
+
+```{R eval = FALSE, echo=TRUE}
+ggplot(d, aes(x=price, y=carat, color=cut)) + # first the data frame, then in the aesthetic (aes), specific the variables and the color, if desired
+  geom_point() + # tells ggplot to generate a scatterplot (instead of a line plot, e.g.)
+  geom_smooth(method=lm, aes(fill=cut)) # adds a linear smoother with color-specific confidence intervals
+```
+
+This is already a much prettier plot that is also more descriptive. For example, note the different colors associated with the type of cut (e.g., Fair, Good, etc.). Further, note the `geom_smooth` argument, which allows for the inclusion of overlaid linear fit lines between these variables, conditional on diamond cut. Then, in the aesthetic (aes), there are also color-specific confidence intervals around each corresponding line. There are many, many more arguments and updates users can make to `ggplot2` plots, e.g., users can also use the `shape` argument to change the shape of the points (e.g., circles, triangles, etc.). Just run `?ggplot2` to view the many parameters and customization options available.  
+
+However, you may have noticed that when you ran the code, it took some time to generate the plot. This is because of the large size of the data (> 53,000 observations). Additionally, though prettier than the ase `R` version, this plot is a little tricky to read with so many observations. To fix these problems, thereby generating a simpler plot with fewer observations, let's draw a random sample of 1000 observations from the full diamonds data. This will make it easier to see what is going on in the plot.
+
+To do so, simply tell `R` to randomly sample however many rows you want from the data frame, `d`, using the `sample` function. _Then, be sure to store the new restricted data set in its own object to avoid overwriting the original full data set, `d`_. 
+
+```{R eval = FALSE, echo=TRUE}
+small.d <- d[sample(nrow(d), 1000), ] # Note: we call our new restricted data set "small.d"
+```
+
+To verify before moving on that things worked as they should, quickly inspect the data using the `head` command, which shows the first few observations. All variables should be the same and the observations should be random. _Note_: as this is a _random_ sample, try running the above line again to get an entirely new random set of 1000 observations from the larger `diamonds` dataset.
+
+```{R eval = FALSE, echo=TRUE}
+head(small.d)
+```
+
+With that, now let's try our scatterplot again with the smaller dataset, `small.d`, to get a less congested picture.
+
+```{R eval = FALSE, echo=TRUE}
+ggplot(small.d, aes(x = price, y = carat, color = cut)) +
+  geom_point() +
+  geom_jitter() + # "jitter" adds a tiny bit of random noise around each point to avoid overfitting
+  geom_smooth(method = lm, aes(fill = cut)) + 
+  theme_bw() +
+  labs(x = "Price", 
+       y = "Weight (Carat)",
+       title = "The Price of Diamonds by Weight",
+       subtitle = "Data from 1000 Randomly Sampled Observations from 'Diamonds'")
+```
+
+A final way to show conditional distributions is using a facet wrap (`facet_wrap`), which separates each plot and places each in its own window. _Note_: we did this passively above with the histograms, but using `facet_grid`; its worth showing again with the scatterplot. The `facet_grid` is less flexible, and places facets in a long rectangle (i.e., stacked), whereas the `facet_wrap` allows any direction or combination of columns and rows. Its generally better to use `facet_wrap`, and customize to your liking. Let's see it in action:  
+
+```{R eval = FALSE, echo=TRUE}
+ggplot(small.d, aes(x = price, y = carat, color = cut)) +
+  geom_point() +
+  geom_jitter() + # "jitter" adds a tiny bit of random noise around each point to avoid overfitting
+  geom_smooth(method = lm, aes(fill = cut)) + 
+  theme_bw() +
+  labs(x = "Price", 
+       y = "Weight (Carat)",
+       title = "The Price of Diamonds by Weight",
+       subtitle = "Data from 1000 Randomly Sampled Observations from 'Diamonds'") +
+  facet_wrap(~ cut) # change the number of rows as well using "nrow = x" or columns using "ncol = x"
+```
+
+### Advanced Topics: Interactive Plots
+
+Per past classes, given your interest, we will next cover a few advanced topics in `ggplot2`, but at a very high level. There will be some extra code here, and we can't dive into the weeds too much. The goal at this point, is to take what you have learned in the comparative cases above, and apply it to understand the more complex code below. Its all the same logic; just take it line by line. 
+
+There are many ways to generate interactive plots in R, such as `iplot`, `Rggobi`, `plotly`, and so on. Though all of these have their strengths and weaknesses, I like `plotly` the best because it has a host website that let's you place interactive plots on the web simply (it also include a simple point and click interface at <https://plot.ly/>; see for example a page I made for a Library of Congress data visualization challenge competition: <https://plot.ly/~pwaggo/5/historical-behavioral-trends-in-us-house-of-representatives/>), and also, its a little more sleek, and is thus cutting edge. 
+
+With that, our first advanced topic with be a quick tour of interactive plots using `plotly`, which leverages `ggplot2` grammar of graphics. For this we will need to simply load the `plotly` R package and library. We will also install the `tidyverse` package to use the pipe operator, `%>%`. We will continue to use our `small.d` data object with a 1,000 random draws from the `diamonds` dataset. And finally, for interactive plots using `plotly`, we will mostly be using the `plot_ly` command, and altering the `type` within the function. Let's get started, with a simple scatterplot:
+
+```{R eval = FALSE, echo=TRUE}
+library(plotly)
+library(tidyverse)
+
+# small.d again, incase you need it - easier to work with 
+small.d <- d[sample(nrow(d), 1000), ] 
+
+# simple scatterplot
+scatter <- plot_ly(small.d, # data object
+        x = ~carat, # x axis
+        y = ~price, # y axis
+        type = "scatter", # plot type (e.g., "bar", "pie", "histogram", etc.)
+        text = paste("Clarity: ", small.d$clarity), # change hover text
+        mode = "markers", # plotting object type (e.g., "lines", "markers"/points)
+        color = ~carat, # conditional color by weight/carat
+        size = ~carat # conditional size by weight/carat
+        ) %>% 
+  layout(title = 'Simple Scatterplot',
+         xaxis = list(title = 'Carat'
+                      #range = c(0, 4) # manually set the axis range
+                      ),
+         yaxis = list(title = 'Price'
+                      #range = c(0, 30000) # manually set the axis range
+                      ))
+scatter
+```
+
+As you can see, there are a few changes to syntax. But mostly, the intuition from `ggplot2` remains. Let's try another, but of a histogram:
+
+```{R eval = FALSE, echo=TRUE}
+hist <- plot_ly(small.d, # data
+                   x = ~price, # x axis
+                   type = "histogram", # plot type
+                   text = paste("Carat: ", small.d$carat), # change hover text
+                   color = ~clarity # conditional color by clarity
+) %>% 
+  layout(title = 'Simple Histogram',
+         xaxis = list(title = 'Price'),
+         yaxis = list(title = 'Count'))
+hist
+```
+
+There is a ton of information in this plot! Inspect it all carefully, as well as leveraging the internal tools from `plotly` in the upper right.
+
+And finally, just for fun, let's build a 3-D plot. To do so, we will first create a matrix of random useless values, and then plot the matrix in 3 dimensions. 
+
+```{R eval = FALSE, echo=TRUE}
+m <- matrix(sample.int(400, 
+                       size = 85*60, 
+                       replace = TRUE), 
+            nrow = 85,
+            ncol = 60)
+
+m.plot <- plot_ly(z = m, 
+                  type = "surface")
+m.plot
+```
+
+### Advanced Topics: Polar Plots
+
+Polar plots are circular plots and can be very useful to pick up k-dimensional spaces more effectively. But they can also be "gimick-y" complications of simpler data. Let's do the latter, using the `mtcars` dataset. We will be using only `ggplot2` for this, and creating a few things to add labels to a circular object, rather than the classic plot space (e.g., x and y axes).
+
+```{R eval = FALSE, echo=TRUE}
+# Manipulate the mtcars data and create some useful indicators for plotting
+mtcars <- mtcars
+mtcars$id <- seq(1, nrow(mtcars))
+mtcars_labs <- mtcars
+bar_num <- nrow(mtcars_labs)
+angle <- 90 - 360 * (mtcars_labs$id - 0.5) / bar_num 
+mtcars_labs$hjust <- ifelse(angle < -90, 1, 0)
+mtcars_labs$angle <- ifelse(angle < -90, angle + 180, angle)
+
+# Now generate the plot using the ggplot command in the ggplot2 package
+ggplot(mtcars, aes(x = as.factor(id), y = mpg)) + 
+  geom_bar(stat = "identity", fill = alpha("darkblue", 0.3)) +
+  theme_minimal() +
+  theme(axis.text = element_blank(),
+        axis.title = element_blank(),
+        panel.grid = element_blank()) +
+  coord_polar(start = 0) + # this makes it a polar plot (circle)
+  geom_text(data = mtcars_labs, aes(x = id, y = mpg + 5, label = rownames(mtcars), hjust = hjust), 
+            color="black", 
+            fontface="bold",
+            alpha=0.6, 
+            size=2.5, 
+            angle = mtcars_labs$angle, 
+            inherit.aes = FALSE) +
+  labs(title = "Fancy Polar Barplot",
+       x = "",
+       y = "") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+So the longer bars reflect higher MPG for all cars in the data set. You can make this interactive with more code and using the `plotly` package.
+
+### Advanced Topics: Geospatial Choropleths and Heatmaps
+
+Finally, we will quickly cover creating geospatial choropleths in an applied case: 2016 presidential vote shares received by Trump in each congressional district (CD) in New Jersey. We have the option to overlay the choropleth on a Google map, but this will require a Google maps API Key. If you don't have one, though, we will just print the stand alone state. To do this, we will need CD shapefiles, which include coordinates for all 50 U.S. states, based on the Congress in question, given that congressional district boundaries shift every 10 years. Given that this is a bit more computationall intense, feel free to just follow along if you want to. If you decide to follow along, I also included the output from major commands commented out below the code for ease of tracking. Let's start.
+
+```{R eval = FALSE, echo=TRUE}
+library(tidyverse)
+library(ggplot2)
+library(sf)
+library(ggmap)
+## Google Maps API Terms of Service: http://developers.google.com/maps/terms.
+## Cite ggmap if you use it: see citation("ggmap") for details.
+
+## Loading up the geographic data
+## Next we write a function that returns the district boundaries for the congressional districts from a specific congress based on the shapfiles stored at UCLA
+
+get_congress_map <- function(cong=114) {
+  tmp_file <- tempfile()
+  tmp_dir  <- tempdir()
+  zp <- sprintf("http://cdmaps.polisci.ucla.edu/shp/districts%03i.zip",cong)
+  download.file(zp, tmp_file)
+  unzip(zipfile = tmp_file, exdir = tmp_dir)
+  fpath <- paste(tmp_dir, sprintf("districtShapes/districts%03i.shp",cong), sep = "/")
+  st_read(fpath)
+}
+
+#Then for our example, we load the districts from the 114th congress:
+
+cd114 <- get_congress_map(114)
+
+## HERE IS THE OUTPUT
+## Reading layer `districts114' from data source `/private/var/folders/l_/f53v6nlj6cgdfpybr4d1vqf80000gn/T/RtmpxV0Tnp/districtShapes/districts114.shp' using driver `ESRI Shapefile'
+## Simple feature collection with 436 features and 15 fields (with 1 geometry empty)
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: -179.1473 ymin: 18.91383 xmax: 179.7785 ymax: 71.35256
+## epsg (SRID):    4269
+## proj4string:    +proj=longlat +datum=NAD83 +no_defs
+
+
+## Now select just the districts from New Jersey
+  
+cd114_nj <- cd114 %>% 
+  filter(STATENAME=="New Jersey") %>%
+  mutate(DISTRICT = as.character(DISTRICT)) %>%
+  select(DISTRICT)
+
+## Now add in new district-level data
+
+trump_nj <- tibble(DISTRICT=as.character(1:12),
+                     `Trump Vote`=c(36.1, 50.6, 51.4, 55.8, 
+                                    48.8, 40.6, 47.5, 21.5,
+                                    33.1, 12.8, 48.8, 31.8))
+cd114_nj <- cd114_nj %>% left_join(trump_nj, by="DISTRICT")
+cd114_nj
+
+## HERE IS THE OUTPUT
+## Simple feature collection with 12 features and 2 fields
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: -75.55979 ymin: 38.92852 xmax: -73.90267 ymax: 41.35742
+## epsg (SRID):    4269
+## proj4string:    +proj=longlat +datum=NAD83 +no_defs
+##    DISTRICT Trump Vote                       geometry
+## 1         1       36.1 MULTIPOLYGON (((-75.0258737...
+## 2         2       50.6 MULTIPOLYGON (((-75.5426929...
+## 3         3       51.4 MULTIPOLYGON (((-75.031005 ...
+## 4         4       55.8 MULTIPOLYGON (((-74.752681 ...
+## 5         5       48.8 MULTIPOLYGON (((-75.1355228...
+## 6         6       40.6 MULTIPOLYGON (((-74.519208 ...
+## 7         7       47.5 MULTIPOLYGON (((-75.2037114...
+## 8         8       21.5 MULTIPOLYGON (((-74.254068 ...
+## 9         9       33.1 MULTIPOLYGON (((-74.206197 ...
+## 10       10       12.8 MULTIPOLYGON (((-74.305014 ...
+## 11       11       48.8 MULTIPOLYGON (((-74.78921 4...
+## 12       12       31.8 MULTIPOLYGON (((-74.942909 ...
+
+# map the stand alone state
+ggplot() + 
+  geom_sf(data=cd114_nj,aes(fill=`Trump Vote`),inherit.aes=FALSE,alpha=0.9) + 
+  scale_fill_gradient(low = "white", high = "dark green", limits=c(20,80)) +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) 
+
+
+
+## Or, we can look at a map overlayed on a google map
+## Before mapping, we need to (obtain and) set a google maps API key (permanently)
+#register_google(key = "[YOUR API KEY HERE]", write = TRUE)
+
+dm <- get_map(location = "New Jersey", zoom = 8)
+
+## Source : https://maps.googleapis.com/maps/api/staticmap?center=New+Jersey&zoom=8&size=640x640&scale=2&maptype=terrain&language=en-EN
+## Source : https://maps.googleapis.com/maps/api/geocode/json?address=New%20Jersey
+
+ggmap(dm) + 
+  geom_sf(data=cd114_nj,aes(fill=`Trump Vote`),inherit.aes=FALSE,alpha=0.9) + 
+  scale_fill_gradient(low = "blue", high = "red", limits=c(20,80)) +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) 
+```
+
+And finally, here is some code for an interactive heatmap, where colors are representing 3-D, but in 2-D form. 
+
+```{R eval = FALSE, echo=TRUE}
+# Read and manipulate the Iris data built into R
+iris <- iris[, -c(5)] # drop binary species var for matrix transformation
+iris <- as.matrix(iris) # create matrix of full data - 4 vars
+
+# Normalize by the columns in the data set
+iris <- apply(iris, 2, function(x){
+  x/mean(x)
+  })
+
+# Generate the plot
+plot_ly(x = colnames(iris), 
+        y = rownames(iris), 
+        z = iris, 
+        type = "heatmap", 
+        colors = colorRamp(c("red", "yellow")), 
+        showscale = F)
+```
+
+### Concluding Remarks
+
+Now you have a lot of code and some useful tools to start working on advanced visualization. The internet is full of similar and very different cases. Even though this stuff here is complex, it can get far more complex than this even. Play around with the code and have fun!
+
+### More Resources
+
+1. The [Data Visualization](http://r4ds.had.co.nz/data-visualisation.html) Chapter in the [R for Data Science](http://r4ds.had.co.nz/), Free book by Hadley Wickham and Garrett Grolemund
+2. The [R Graphics Cookbook](http://www.cookbook-r.com/Graphs/), Free book by Winston Chang
