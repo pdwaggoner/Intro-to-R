@@ -1,0 +1,319 @@
+---
+title: "Statistics: Binary Response Models"
+author: | 
+  | Philip Waggoner
+  | College of William & Mary
+  | pdwaggoner@wm.edu
+#date: "9/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Preface
+
+We are continuing with the broad "hypothesis testing framework": _Can we reject the "null hypothesis of no effect" given the data we observe, or not?_ To date we have addressed simple numerical relationships and ordinary least squares (OLS) regressions. Now, we will transition to account for a different, but frequently occuring data generating process: binary choices. 
+
+We would decide to fit a binary response model if we have binary choice data (e.g., yes/no, 0/1, this/that). If we are interested in predicting the outcome of a binary dependent variable, then we, unsurprisingly, need a binary response model that can efficiently (and properly) handle estimation of a binary outcome. 
+
+We can't use OLS for binary response DVs, because it assumes a continuous dependent variable or "response". The first attempt to deal with this type of data was called a linear probability model. But, it was pretty quickly discovered that this type of model produced ridiculous probabilities and estimates (e.g., 105% or -30% likelihood of some event happening). 
+
+Thus, the two main approaches here are: logistic regression (logit) and probit regression. Probit was a big deal about 20-30 years ago, and logit has mostly taken its place, with a few notable exceptions (e.g., a Heckman 2-stage probit estimator to explore and account for selection effects in data). But, both of these estimators produce virtually idential estimates and are essentially comparable (i.e., it would matter if you presented either a logit or probit model in a paper; both are eqaully accepted, though logit is much more popular). 
+
+### Fitting a Binary Response Model
+
+Estimating a binary response model in `R` is quite simple. The `glm()` can be used to fit either a logit or a probit model. Once a binary response model has been estimated, it is always a good idea to illustrate the results using graphs. Let's begin.
+
+We will use the data file `Court.dta`. The variable of interest is Supreme Court’s decision making in cases involving habeas corpus. `propetit` is the dependent variable, coded as 1 if the decision is pro-petitioner, and 0 otherwise. In SCOTUS cases, a "petitioner" is the one who brought the case to the court (e.g., the plantiff), and the one being sued (e.g., the defendant) is the "respondent". If we expect that the Court’s decision is influenced by its political preferences (measured as liberalism), we can empirically explore this theoretical argument by including `liberal` as the key explanatory variable. This variable is scaled between 0 and 1. For easier interpretation, we will rescale it onto a 0-100 scale. Rescaling will never change the substantive results and interpretation.
+
+First, we will demonstrate how poorly an OLS model performs in this case. All of this is in the following code. 
+
+```{R eval = FALSE, echo=TRUE}
+# load some packages/libraries first
+library(faraway)
+library(foreign)
+library(ggplot2)
+library(arm)
+library(MASS)
+library(OOmisc) # for ePCP
+library(pROC) # for ROC curve
+library(lmtest) # for likelihood ratio tests
+library(heatmapFit) # for heat maps
+
+
+# now read in the data
+mydata <- read.dta(file.choose())
+
+# rescale the "liberal" variable
+mydata$liberal2 <- round(mydata$liberal * 100, 2)
+
+attach(mydata)
+
+plot(propetit ~ liberal2, mydata, xlim=c(0,100), ylim = c(0,1), 
+     xlab="Liberalism", 
+     ylab="Observed Petition Outcome")
+
+lmod <- lm(propetit ~ liberal2, mydata)
+abline(lmod)
+```
+
+Thus, the proper model specification is a logit (or probit) model. We reach to the same substantive conclusion regarding how liberalism affects the probability of making pro-petitioner decisions. We will fit a logit model, first, then a prbit model to estimate the relative impact of "legal" and political factors on the propensity for the Supreme Court to hand down a pro-petitioner ruling in habeas corpus cases. 
+
+```{R eval = FALSE, echo=TRUE}
+# Logit Model
+logitmod <- glm(propetit ~ liberal2, family = binomial(link = logit), mydata); summary(logitmod)
+
+# Probit Model
+probitmod <- glm(propetit ~ liberal2, family = binomial(link = probit), mydata); summary(probitmod)
+
+# Now plot the curves
+plot(propetit ~ liberal2, mydata, xlim=c(0,100), ylim = c(0,1), 
+     xlab="Liberalism", 
+     ylab="Prob of Granting Relief")
+x <- seq(0, 100, 1) # key to produce two curves on a hypothetical scale to allow the two to be mapped together
+
+lines(x, ilogit(-3.2828 + 0.06929 * x), lty = 1, col="red", lwd = 2) # Plug in estimated intercept and slope, logit
+lines(x, pnorm(-1.9731 + 0.04176 * x), lty = 2, col="blue", lwd = 2) # Plug in estimated intercept and slope, probit
+legend(0, 0.8, # placement of legend
+       lty = c(1,2), 
+       lwd = c(2,2), 
+       col = c("red","blue"), c("Logit","Probit"), cex=1)
+
+## NOTE:
+# ilogit = inverse logit distribution: intercept + slope * scale - the logit link function
+# pnorm = functional form for probit is normal, thus the command "pnorm"
+```
+
+What do we see?
+
+### Interpreting Logit and Probit Output
+
+Logit and probit output are uninterpretable on their own. Thus, once we estimated a logit/probit model, we can use in-sample predictions to calculate predicted probabilities corresponding to specific values of liberalism. The following two predictions show, based on probit and logit specifications, the probabilities of making pro-petitioner decision when the variable liberalism is at its minimum, median, and maximum.
+
+```{R eval = FALSE, echo=TRUE}
+# Prediction when liberalism is at its min, median, and max
+ilogit(-3.2828 + 0.06929 * 21) #min
+pnorm (-1.9731 + 0.04176 * 21) #min
+ilogit(-3.2828 + 0.06929 * 41) #median
+pnorm (-1.9731 + 0.04176 * 41) #median
+ilogit(-3.2828 + 0.06929 * 83.11) #max
+pnorm (-1.9731 + 0.04176 * 83.11) #max
+
+# "phat" from glm is another way of calculating the full set of in sample predictions
+logit.phat <- logitmod$fitted.values # vector of fitted values from logit model
+probit.phat <- probitmod$fitted.values # same for probit
+xb1 <- 0.06929 * liberal2; summary(xb1)
+xb2 <- 0.04176 * liberal2; summary(xb2)
+
+# Now, plot each curve together
+par(mfrow=c(1,2))
+plot(logit.phat ~ xb1, lty=1, type = "o", xlim=c(1,6), 
+     xlab = "xb", 
+     ylab = "Predicted Probability")
+plot(probit.phat ~ xb2, lty=2, type = "o", col = "blue", xlim = c(0,4), 
+     xlab = "xb", 
+     ylab = "Predicted Probability")
+par(mfrow=c(1,1)) # reset plot pane space
+
+# Now, plot predicted probabilities against one another to see how closely they match
+mydata2 <- data.frame(cbind(logit.phat, probit.phat))
+qplot(logit.phat, probit.phat, data = mydata2, geom = "point",
+xlab = "Logit", ylab = "Probit")
+```
+
+What do we see?
+
+### Hypothesis Testing, Inference and Substantive Interpretation
+
+For both the logit and probit models, `glm()` returns the slope coefficients, their corresponding standard errors and significance levels as the default model output. We can also get confidence intervals for the estimated coefficients. `confint()` calculates the CIs by profiling the likelihood. `confint.default()` does so using an asymptotic normal distribution. The two functions will produce comparable CIs. As we can see, the logit model produces a slope coefficient of `0.069`, but its 95% confidence intervals are `[0.040 0.104]` (using `confint()`), and `[0.038 0.101]` (using `confint.default()`).
+
+After estimating a logit model, we can also convert coefficients into odds ratios, which are easy to interpret. Based on the mean odds ratio, a one-point increase in the Court's liberalism (on a 1-to-100 scale), will increase the probability of making pro-petitioner decision by 7%. The 95% CIs of that mean effect is [4% 10%].
+
+```{R eval = FALSE, echo=TRUE}
+# Profiling likelihood distribution
+confint(logitmod) # for each independent variable - profiling likelihood estimates
+
+# Asymptotic normal distribution: produces comprable results with previous options
+confint.default(logitmod) # profiling asyumptotic distribution versus the likelihood distribution
+
+# Obtaining odds ratios: relative chance of observing an event versus not observing the event
+exp(logitmod$coefficients) 
+
+# mean esimates - interpret liberal2 odds ratio as: ".07% more likely to see cases of 1 versus cases of 0 - a 1 unit change changes the likelihood of seeing that event at 7%"
+
+# With CIs
+exp(confint(logitmod))
+```
+
+### Consider Alternative Model Specifications
+
+The logit/probit model reported above may be under-specified, because it only includes `liberal2` as an independent variable. We may consider an alternative model, which includes three more independent variables: `usparty`, `ineffcou`, and `multpet.` We see that both `ineffcou` and `multpet` are significant predictors of the dependent variable.
+
+The variable `usparty` is not a significant predictor of the dependent variable in our second logit model. But if we theorize that this is a conditional variable to `liberalism` (i.e. the effect of `liberalism` on `propetit` is conditional on whether the US government is a party in the case, i.e., `usparty`), we can respecify our model by including an interaction term between the two variables. In this model, we only consider `liberal2`, `usparty` and the multiplicative term `liberal2 × usparty`. Here we observe that only `liberal2` has a significant coefficient. The coefficients for `usparty` and the interaction term are both insignificant. This indicates that the effect of "liberals" on the probability of granting relief (i.e. making pro-petitioner decision) may not be conditioned by `usparty`.
+
+```{R eval = FALSE, echo=TRUE}
+logitmod2 <- glm(propetit ~ liberal2 + 
+                   usparty + ineffcou + multpet, # three new vars
+                 family=binomial(link=logit), mydata); summary(logitmod2)
+
+# Obtaining odds ratios and their CIs
+round(exp(cbind(Estimate = coef(logitmod2), confint(logitmod2))), 2)
+
+# 2.3 Alternative Model Specification: With an Interaction Term
+logitmod3 <- glm(propetit ~ liberal2 + 
+                   usparty + ineffcou + multpet + # three new vars
+                   liberal2*usparty, # INXN term
+                 family=binomial(link=logit), mydata); summary(logitmod3)
+```
+
+The interaction seems insignificant. But the trap is only looking at the significance of the interaction term can be limiting. Thus, the best way to evaluate significance of interaction is to plot the predicted probabilities across _full range_ of the variable of interest, while letting other conditional variables to be held at low vs. high values. If differentiable, then there is a strong interaction. If varaibles are not differentiable, then we can rule out interactive effects.
+
+```{R eval = FALSE, echo=TRUE}
+plot(propetit ~ liberal2, mydata, xlim=c(0,100), ylim = c(0,1), pch=20,
+     xlab = "Liberalism", 
+     ylab = "Predicted Probability of Granting Relief")
+lines(x, invlogit(-2.99693 + 0.06435 * x),lty=1,col="red",lwd=2) # setting us party equal to zero - leave it out
+lines(x, invlogit(-2.99693 + 0.06435 * x - 4.72104 * 1 + 0.07148 * x),
+      lty = 2, col = "blue", lwd = 2) # us party equals 1, then include the link function here
+legend(0, 0.9, 
+       lty=c(1,2), 
+       lwd=c(2,2),
+       col=c("red","blue"), c("usparty=0","usparty=1"), cex = 1)
+```
+
+From this figure, we observe that the predicted probabilities associated with `liberal2` are different when `usparty` takes different values. The only cross-point is when liberalism is around 65. The figure also suggests that when the Court is conservative, the decisions seem to be very different when U.S. government is an involving party and when U.S. government is not an involved party. 
+
+_But can we really draw the conclusion that the two sets of predicted probabilities are statistically different from each other?_ Not really. We need to estimate their corresponding confidence intervals to evaluate the observed difference.
+
+```{R eval = FALSE, echo=TRUE}
+# CIs for predicted probabilities
+# First, create a new data set - the alternative way of writing the X scale - from 20 to 80, lengthening out to 100 observations
+newdata2 <- with(mydata, data.frame(liberal2 = rep(seq(from = 20, to = 80, length.out = 100),
+                2), usparty = rep(0:1, each = 100))) 
+
+newdata3 <- cbind(newdata2, predict(logitmod3, newdata = newdata2, type = "link",
+                se = TRUE))
+
+# Add CIs
+newdata3 <- within(newdata3, {
+  PredictedProb <- plogis(fit)
+  LL <- plogis(fit - (1.96 * se.fit))
+  UL <- plogis(fit + (1.96 * se.fit))
+})
+
+# Recode usparty as a factor
+newdata3$usparty <- factor(newdata3$usparty, labels=c("Yes", "No"))
+
+attach(newdata3)
+
+# Plot out-sample predictions with CIs
+ggplot(newdata3, aes(x=liberal2, y=PredictedProb, colour=usparty)) +
+  geom_line() +
+  geom_errorbar(aes(ymin = LL, ymax = UL),
+                colour="gray",
+                size=.3,    # Thinner lines
+                width=.2,
+                position=position_dodge(.9)) +
+  labs(x="Political Preferences (Liberalism)",
+       y="Predicted Probability of Granting Relief",
+       colour="U.S.Party") +
+  scale_fill_hue(breaks=c("Yes", "No"),
+                 labels=c("Yes",  "No")) +
+  ggtitle("The Effect of Preferences on Granting Relief") +
+  theme_bw() +
+  theme(legend.justification=c(.7,1),
+    legend.position=c(.9,.3))
+```
+
+What do we see?
+
+### Assessing Model Fit
+
+We have ruled out the model specification that includes an interaction term between `liberal2` and `usparty`. Our further consideration should be to compare which model produces a better fit, first logit model (only including one predictor) or the second logit model (including four predictors). Three are three different approaches to assess model fit: classification-based, likelihood-based, and heat map fit plots.
+
+#### Classification-Based Approach
+
+Both ePCP (expected proportion of correct prediction) and ROC (receiver operating characteristic) curves are commonly used classification-based approach. In essence, we assess model fit by examining how good a model predicts responses, taking the observed outcomes as the baseline.
+
+Using function `ePCP()`, we get the ePCP statistics associated with models 1 and 2. 
+
+```{R eval = FALSE, echo=TRUE}
+y <- mydata$propetit
+pred1 <- predict(logitmod, type="response")
+pred2 <- predict(logitmod2, type="response")
+
+# ePCP, expected proportion of correct prediction
+epcp1 <- ePCP(pred1, y, alpha = 0.05) # define observed values and obtain predicted values
+epcp1
+epcp2 <- ePCP(pred2, y, alpha = 0.05)
+epcp2
+```
+
+Model 2 has greater mean expected proportion of correct prediction than model 1, therefore, based on mean ePCP, model 2 (with four predictors) produces a better fit than model 1. Because `ePCP()` also produce CIs, we can further compare the two sets considering CIs. Shown in the following figure, ePCP really is not that helpful. The two models have comparable levels of goodness of fit.
+
+```{R eval = FALSE, echo=TRUE}
+epcpdata <- data.frame(rbind(epcp1, epcp2))
+epcpdata$model <- c(1,2)
+epcpdata$count <- factor(c(1,2), label = c("Model1","Model2"))
+
+# Now the plot
+ggplot(epcpdata, aes(x=model,y=ePCP,colour=count)) +
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=lower, ymax=upper),
+                width=.2,
+                position=position_dodge(.9)) +
+  labs(x="Model Specification",
+       y="Expected Proportion of Correct Prediction",
+       colour="Model Specification") +
+  ggtitle("Comparing ePCP between Model 1 and Model 2")
+```
+
+Here again, model 2 is better.
+
+We can also use ROC curves to further compare the two models. A ROC plots correct predictions (sensitivity, true positive rate) against false predictions (specificity, false positive rate). A model with excellent fit will produce a curve that is _very close_ to the left and top bound. In other words, the area under the curve is large (near 1). A model with poor fit will produce a curve close to the 45-degree diagonal line (whereby it is equally likely for us to see correct and false predictions). In other words, a model has a very poor fit, the area under the curve is very small (near 0). 
+
+```{R eval = FALSE, echo=TRUE}
+par(mfrow = c(1,2))
+plot.roc(y, pred1, col="red")
+plot.roc(y, pred2, col="blue")
+par(mfrow = c(1,2)) # reset the pane space
+```
+
+Based on ROC, model 2 produces a better fit than model 1.
+
+#### Likelihood-Based Approach
+
+We can also compare the AIC statistics to compare model fit. Formally, AIC is defined as: $AIC = 2k − 2 ln(L)$. A better model fit is associated with smaller AIC. It penalizes inclusion of more predictors, similar to $R^2$ vs. Adj $R^2$.
+
+```{R eval = FALSE, echo=TRUE}
+# Compare AICs
+extractAIC(logitmod)
+extractAIC(logitmod2) # smaller AIC is the one with better fit
+```
+
+Model 2 produce slightly smaller AIC than Model 1, therefore, model 2 produces a better fit. 
+
+Alternatively, we can use the likelihood ratio test to compare model fit. We define the test statistic as: $D = 2lnL(M_U) − 2lnL(M_C)$, where $L(M_U)$ is the likelihood evaluated at the ML estimates for the unconstrained model (in our case, model 2). $L(M_C)$ is the likelihood evaluated at the ML estimates for the constrained model (in our case, model 1). 
+
+```{R eval = FALSE, echo=TRUE}
+lrtest(logitmod, logitmod2)
+```
+
+Large $X^2$ statistics and the small p-value indicate that model 2 is better than model 1.
+
+#### Heat Map Fit Plot
+
+Last, but not least, we can plot heat map fit plot to compare goodness of fit. When reading a heat map plot, we also compare model predictions with smoothed empirical predictions. The 45-degree line references a perfect fit. Any deviance from that line suggests a _loss_ in goodness of fit. The "p-value" legend shows if any deviance is statistically significant (dark color means statistical significance). 
+
+```{R eval = FALSE, echo=TRUE}
+heatmap.fit(y, pred1, reps = 1000, legend = FALSE)
+heatmap.fit(y, pred2, reps = 1000, legend = FALSE)
+```
+
+The two heat map plots show that model 2 outperforms model 1.
+
+### Concluding Remarks
+
+We have covered how to fit the two most common binary response models: logit and probit. We also covered how to transform the output into something interpretable, including predicted probabilities, odds ratios, and visualizations of these things with confidence intervals from out of sample predictions. We then covered many methods for assessing the fit of these models. You should hopefully be able to fit these models on your own data and for your own projects. 
