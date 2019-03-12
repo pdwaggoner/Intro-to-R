@@ -1,0 +1,299 @@
+---
+title: "Data Management, Cleaning, and Wrangling"
+author: | 
+  | Philip Waggoner
+  | College of William & Mary
+  | pdwaggoner@wm.edu
+#date: "9/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Preface
+
+Now, we are going to go into much more depth on cleaning, managing, manipulating, and recoding data. This is broadly called data "wrangling" or "munging." 
+
+We will start the first half with the base R approach, and then we will end the class with some tips on doing these types of things with Tidy coding. 
+
+### First, A Quick Review
+
+Last class, we learned how to look for and import a variety of forms of data into `R`. Specifically, we looked at `.csv`, `.dta`, `.txt`, `.json`, and a few others. Recall that the main function associated with importing data is `read.[FILE EXTENSION HERE]`. Thus to read in a `.csv` file, for example, you would start with `read.csv`, and progress from there specifying where to get the data on your computer, and also where and how to store the data as its own object. This is a very important first step in using data. 
+
+We also discussed how to install packages and load libraries for a specific function or suite of functions beyond the confines of base `R`. This is incredibly valuable in virtually any coding or research task in `R`, as `R` is open source, meaning people are developing and contributing packages to `R` all the time. Thus, we need to get comfortable exploring packages and learning to use them in our own research. 
+
+To access packages, recall you must first install the package, and then load the library to be able to use the functions stored within the package source files. The basic function for _installing_ any package is `install.packages("[PACKAGE NAME HERE]")`. Then, with the package installed, you _load_ the library using the command `library("[PACKAGE NAME HERE]")`. Note the quotation marks in the `install.packages()` command, but the lack of quotation marks in the `library()` command. You may run up against error messages if you reverse these. 
+
+### Data Wrangling in Base `R`
+
+Now that we know how to load data and use a working directory, as well as load and use packages, we can now start to do stuff with our data. In the `R` programming world this "doing stuff" (from cleaning, organizing, recoding, and so on) is called "data wrangling." There are two main schools of thought here: data wrangling in base `R` and data wrangling in the tidyverse. We will explore both today, beginning with base `R`.
+
+Below, you will find code for the following data munging tasks in Base `R`: restructuring data frames, subsetting/selecting data, merging data frames, deleting variables, creating variables, recoding existing variables to create new variables, and sorting data frames.
+
+We will use the built-in `mtcars` dataset again for this first part, and then a few toy political datasets for the Tidyverse portion at the end.
+
+```{R eval=FALSE, echo=TRUE}
+
+# restructuring (flipping) df
+mtcars
+t(mtcars)
+# and you can store these as different dfs by assigning them to unique objects like anything else
+
+
+#######################
+
+
+# Subsetting and selecting data
+# using subset function 
+# first 5 observations
+newdata1 <- mtcars[1:5,]
+
+# another way of tdoing the same thing
+newdata2 <- head(mtcars, 5)
+
+# new df for first half of the weight of cars, that are only 4 cylinders
+newdata3 <- subset(mtcars, wt <= 3.325 & cyl == 4) # also discuss |
+
+# another way of doing the same thing using "which", but with UPPER half of heavy cars
+newdata4 <- mtcars[which(mtcars$wt >= 3.325  
+                         & mtcars$cyl == 4), ] 
+# what do you see? Something unique about cylinders?
+
+
+#######################
+
+
+## Merging data frames
+# subset manually
+mtcars1 <- mtcars[c(1:6)]
+mtcars2 <- mtcars[c(1, 7:11)] # keep only mpg as common var
+
+# Merge dfs by one var
+new.df <- merge(mtcars1, mtcars2, by = "mpg") 
+
+# what do you see? Problems? Inefficient?
+
+# Merge dfs by two (or more) vars, use "c()"
+
+
+#######################
+
+
+# deleting variables/columns 
+names(mtcars)
+
+new.mt1 <- mtcars[c(-2,-4)] # cyl and hp
+
+names(new.mt1)
+
+# using NULL
+new.mt1$disp <- NULL 
+
+names(new.mt1)
+
+
+#######################
+
+
+# Create new variables
+# many ways using $ operator
+
+mtcars <- mtcars
+
+# vector combinations
+mtcars$wt.disp.sum <- mtcars$wt + mtcars$disp
+
+mtcars$wt.disp.mean <- (mtcars$wt + mtcars$disp)/2
+
+# recode to create a dichotomous var
+mtcars$heavy <- ifelse(mtcars$wt > 3.610, 1, 0) # 3rd quartile 
+
+# recode to create a four level-var
+summary(mtcars$wt)
+mtcars$heavy.category[mtcars$wt <= 2.581] <- "Q1"
+mtcars$heavy.category[mtcars$wt > 2.581 & mtcars$wt <= 3.325] <- "Q2"
+mtcars$heavy.category[mtcars$wt > 3.325 & mtcars$wt <= 3.610] <- "Q3"
+mtcars$heavy.category[mtcars$wt > 3.610] <- "Q4"
+
+
+#######################
+
+
+# sorting data
+# sort by wt
+new.mt2 <- mtcars[order(mtcars$wt),] 
+
+# sort by mpg and cyl
+new.mt3 <- mtcars[order(mtcars$mpg, mtcars$wt),]
+
+#sort by cyl (ascending) and wt (descending)
+new.mt4 <- mtcars[order(mtcars$cyl, -mtcars$wt),] 
+
+```
+
+### Data Wrangling in the Tidyverse
+
+The "Tidyverse" is simply the best approach to cleaning and wrangling data. Thus, we will spend the rest of the time walking through some key Tidyverse code to clean and wrangle data. Its a powerful, consistent approach to cleaning. A key tool we will use repeatedly in this world is something called a pipe operator, `%>%`. A pipe can be read "then". Its a way to pass a series of functions to each other for clean, consistent code. Its in the package `magrittr`, but also automatically loads when we load the `tidyverse` package, which include a suite of powerful packages and libraries. So, let's start with our package and reading a political data set, the 2016 pilot study for the American National Election Study ("NES" or "ANES"). 
+
+```{R eval=FALSE, echo=TRUE}
+# Load the libraries needed for this session.
+library(tidyverse)
+
+# Load the NES data using "file.choose()"
+NESdta <- read.csv(file.choose())
+```
+
+Now that we have data loaded, we need to start doing things with it. Data wrangling is the process of getting your data into the form you need for analysis. The tidyverse gives you a range of functions for managing your data. We will cover four of the most widely used functions:
+
+`select()` - allows you to choose specific variables you wish to keep;
+`filter()` - allows you to filter your data based selected values;
+`mutate()` - allows you to create new variables;
+`case_when()` - allows you to recode a variable based on conditional cases.
+
+#### `Select()`
+
+As with almost any dataset, the NES data has many more variables than we could ever really plan on using in a single analysis. So, we might want to limit ourselves to just those in which we have some interest. Let us create a new object, called `NESdta_short`, which includes only the variables we will need for this section.
+
+```{R eval=FALSE, echo=TRUE}
+# Select particular variables
+NESdta_short <- NESdta %>% 
+  select(fttrump, pid3, birthyr, gender, ftobama, state, gender)
+NESdta_short
+```
+
+This creates a new "tibble" that only includes six variables: `fttrump` - a "feeling thermometer" where people rate their feelings of then primary candidate Donald Trump from 0 to 100; `pid3` - a three point rating of political identity, where 1 means Democrat, 2 means Independent, and 3 means Republican; `birthyr`, which is the respondent's year of birth, which we will use to establish their age; `gender`, which is the respondent's gender, which is 1 if male and 2 if female; `ftobama`, which is the feeling thermometer for then-President Obama, again from 0 to 100, and `state`, which is a numeric code for each of the 50 US states (based on Census codes).
+
+The `select()` function in the `tidyverse` package is very versatile. It can be combined with other functions like `starts_with()`, `ends_with()`, and `contains()` to select more than one variable at a time. We can also use the `:` to select more than one variable that are _consecutive_ in the dataset.
+
+For example, if we wanted to select all of the feeling thermometer variables, and we know that they all start with the prefix "ft", we could simply put the following.
+
+```{R eval=FALSE, echo=TRUE}
+# Select using starts_with()
+NESdta %>% select(starts_with("ft")) # this will just print; you can always store in a separate object
+```
+
+Alternatively, since they are next to each other in the original dataset, we could have done it like this.
+
+```{R eval=FALSE, echo=TRUE}
+# Selecting using a range
+NESdta %>% select(ftobama:ftsci)
+```
+
+#### `Filter()`
+
+The `filter()` function works similar to the `select()` function, but instead of selecting columns by their name, `filter()` allows you to select rows by their values. Let's say that we only want to see those respondents who give Trump the highest possible rating (100) and Obama the lowest possible rating (1). We can do this using the `filter()` function.
+
+```{R eval=FALSE, echo=TRUE}
+# Select only those respondents who give Trump a 100 and Obama a 1
+NESdta_short %>%
+  filter(fttrump == 100 & ftobama == 1)
+```
+
+We can see that there were nine respondents who matched this profile.
+
+We can also see in this command the use of multiple logical statements. In this case, we asked for only cases where condition 1 AND condition 2 were TRUE. To do this, we used the `&` sign. If we wanted cases where condition 1 OR condition 2 were TRUE, we would have used a vertical bar, `|`.
+
+#### `Mutate()`
+
+In the above set of commands we summarised support for then-candidate Trump by party ID, but what if we want these summaries to be a part of the NESdta_short dataset? This is where the mutate() function comes in. Run the same functions as above, but this time let us use the mutate() function instead of the summarise() function.
+
+```{R eval=FALSE, echo=TRUE}
+# Creating a new variable using mutate()
+NESdta_short <- NESdta_short %>%
+  mutate(average_fttrump = mean(fttrump, na.rm = TRUE))
+NESdta_short
+```
+
+As you can see, a sixth column has been added to our dataset, with the average values for each ID added to the dataset. From here, we can take other actions. For example, we can substract the average for each group from the individual respondent's evaluation of candidate Trump by using the mutate() funciton again.
+
+```{R eval=FALSE, echo=TRUE}
+# Using mutate to create a new variable
+NESdta_short <- NESdta_short %>%
+  mutate(deviation_fttrump = fttrump - average_fttrump)
+NESdta_short
+```
+
+A new column has been added showing how far away each respondent is from the average for those who share their political ID. Respondent 1, shown in the first row, gives trump a rating about 21 points lower than the average for those who share their political ID.
+
+
+##### A Quick Side Note: Dealing with NAs
+
+Many datasets try not to leave blank spaces or mix strings and numeric values. The reason is that some programs might behave unexpectedly when loading this data. So, instead, they represent missing values by highly improbable numeric values - in this case 998 (other datasets will use unexpected negative values like -999). We need to tell `R` that these are actually missing values, denoted as NA in `R`, as opposed to actual numbers.
+
+To do this, we can again use the `mutate()` function. This time, we combine it with the `replace()` function. This function takes three values as its input. The first is the variable on which we are making the replacement, the second is a logical test. This can be read as, "Where the variable is..." For example, the second part of the first replacement asks it to make the replacement where the variable fttrump is greater than 100. As you can see, witin the mutate() function, we have asked for our original variable to be equal to the specified replacement.
+
+```{R eval=FALSE, echo=TRUE}
+# Using replace() to recode values
+NESdta_short <- NESdta_short %>%
+  mutate(fttrump = replace(fttrump, fttrump > 100, NA),
+         ftobama = replace(ftobama, ftobama == 998, NA))
+summary(NESdta_short)
+```
+
+#### `Case_when()`
+
+Another variable we will likely want to change is the state variable. Right now, it has numbers that represent the states, but we will probably want strings with the state names as well. We can look up the numbers associated with each state in the NES and create a new variable called `state_name` that contains the name of the state. Importantly, we can either change this variable or create a new one. Here we will change it. 
+
+There are a lot of values we will need to replace, so we will use a different function, the `case_when()` function, which allows us to change a large number of values within a variable.
+
+```{R eval=FALSE, echo=TRUE}
+# Create a new variable called state_name with the string names of states
+NESdta_short <- NESdta_short %>%
+  mutate(state_name = case_when(state == 1~"Alabama", state == 2~"Alaska",
+                                state == 4~"Arizona", state == 5~"Arkansas",
+                                state == 6~"California", state == 8~"Colorado",
+                                state == 9~"Connecticut", 
+                                state == 10~"Deleware", 
+                                state == 11~"District of Columbia",
+                                state == 12~"Florida", state == 13~"Georgia",
+                                state == 15~"Hawaii", state == 16~"Idaho",
+                                state == 17~"Illinois", state == 18~"Indiana",
+                                state == 19~"Iowa", state == 20~"Kansas",
+                                state == 21~"Kentucky", 
+                                state == 22~"Louisiana", state == 23~"Maine",
+                                state == 24~"Maryland",
+                                state == 25~"Massachusetts",
+                                state == 26~"Michigan", 
+                                state == 27~"Minnesota",
+                                state == 28~"Mississippi",
+                                state == 29~"Missouri", state == 30~"Montana",
+                                state == 31~"Nebraska", state == 32~"Nevada",
+                                state == 33~"New Hampshire",
+                                state == 34~"New Jersey",
+                                state == 35~"New Mexico",
+                                state == 36~"New York",
+                                state == 37~"North Carolina",
+                                state == 38~"North Dakota",
+                                state == 39~"Ohio", state == 40~"Oklahoma",
+                                state == 41~"Oregon",
+                                state == 42~"Pennsylvania",
+                                state == 44~"Rhode Island",
+                                state == 45~"South Carolina",
+                                state == 46~"South Dakota",
+                                state == 47~"Tennessee", state == 48~"Texas",
+                                state == 49~"Utah", state == 50~"Vermont",
+                                state == 51~"Virginia",
+                                state == 53~"Washington",
+                                state == 54~"West Virginia",
+                                state == 55~"Wisconsin", 
+                                state == 56~"Wyoming"))
+```
+
+
+### Exercises
+
+1. Create a new variable called "efficiency" using the mtcars dataset, for all cars at or above the 3rd quartile of `mpg`. Attach it to the mtcars dataset.
+
+2. Duplicate the mtcars dataset, and call the duplicate "mtcars2".
+
+3. Delete the `disp` variable from mtcars2.
+
+4. Rmove the NES dataset, and reload it by specifying the file path.
+
+5. Create any new variable you want using any command you want, but it must be a combination of at least two other variables. It can either be in the mtcars dataset or the NES dataset.
+
+### Concluding Remarks
+
+Today, we have learned core and powerful functions in Base `R` as well as the Tidyverse as we think about and approach data wrangling (or "munging") in `R`. I hope you feel more confident about these tools, and as always, encourage you to explore the documentation associated with all of these new functions. In so doing, you will quickly realize how vast they are, and how much you can do with them to get your data into a good, useable, or "tidy" format. As always, we are merely scratching the surface here. So please follow up with me, your classmates, the `R` community, or anyone else who may be helpful in this regard. Learn together and most importantly, be patient with yourself as you do. Its quite rewarding when you master these things and figure stuff out on your own.  
