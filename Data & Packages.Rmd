@@ -1,0 +1,175 @@
+---
+title: "Loading Data & Working with Packages"
+author: | 
+  | Philip Waggoner
+  | College of William & Mary
+  | pdwaggoner@wm.edu
+#date: "9/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Preface
+
+Today we will learn how to load/import a variety of forms of data from a variety of locations using a variety of approaches. After this, we will explore packages. We will learn to install packages and load libraries associated with them in order to use their stored functions. In so doing, we will be introduced to the `ggplot2` package for generated sophisticated, clean plots. 
+
+### First, A Quick Review
+
+Recall last class we discussed the very basic foundations of programming in `R`, which is something called object-oriented programming. This approach to coding is focused on creating and manipulating objects to do stuff with them. And in applied research, this "stuff" typically entails some combination of estimating and diagnosing models, analysis, and data visualization. 
+
+In service of this goal, we learned how to create objects by assigning different types of data or values to them. We specifically explored character and numeric types of data. We also learned how to create vectors, or many observations stored in a single object. We used these to generate very basic plots using the `plot` and `hist` functions in base `R`. As a refresher, recall: 
+
+```{R eval=FALSE, echo=TRUE}
+# Numeric object
+number <- 1
+number
+
+# character object
+char <- "This is a sentence in an object."
+char
+
+# vector of numeric values
+vector1 <- seq(1, 100, by = 2)
+vector1
+
+vector2 <- c(1,2,3,4,5,6,7,8,9)
+vector2
+
+# basic (useless) scatterplot using plot
+plot(vector1, 
+     main = "Basic Scatterplot of Vector1")
+```
+
+### Importing Data 
+
+Next class we are going to go into much more depth on cleaning, managing, manipulating, and recoding data. This is broadly called data "wrangling" or "munging." But before we get to that stage, we first need to know how to import data into `R`. This first section details the many ways to import many different types of data.
+
+There are many types of and ways to store data out there. There are, for example: comma separated values (`.csv`), Excel files (`.xls` or `.xlsx`), Stata files (`.dta`), SPSS files (`.sav`), TAB delimited or text files (`.txt`), SAS files (`.sas`), and so on. You can also load data directly from a repository online. We will look at loading data using individual commands, first. And then we will load data directly from a few websites and then explore the data we load.
+
+Let's begin with the command line approach to get data from your computer, which is the most inefficient, but still useful to see what is happening at each stage. Before getting the data, you will need to check (and possibly set) your working directory. This is where things go that you do in this session of using `R`. Once we check for this and set it, if we want to update the location, we can now use the `read` command to load some data. 
+
+```{R eval=FALSE, include=TRUE}
+getwd() # check you default wd
+setwd() # if you want to change the wd
+
+# Now load the movies success data from your wd
+#movies <- read.csv(".../[YOUR WD LOCATION HERE]", header = TRUE)
+```
+
+You can also search your computer for data using `file.choose()`. See the updated code:
+
+```{R eval=FALSE, echo=TRUE}
+movies <- read.csv(file.choose())
+```
+
+This command will open a finder window, where you can proceed to search your computer and manually load the desired data. Though handy for quick access, this approach can cause problems with labeling, importing and so on. It is not recommended for full scale projects. Still, its a useful approach to have in your toolbox.
+
+Now, let's use the command line approach to get some data directly form a website. Begin by storing some data on a criminal recidivism experiment from Rossi et al., which is stored at John Fox's website. Note the file extension at the end of the url (what is it?). With the url stored, we can use the `read.csv` function in base `R` to grab the data, where we will store it in the object `recidivism.data`.
+
+```{R eval=FALSE, echo=TRUE}
+url <- "http://socserv.mcmaster.ca/jfox/Books/Companion/data/Rossi.txt"
+
+recidivism.data <- read.table(url)
+```
+
+Let's do it again, and now do something, but using the `load` and `url` commands to load `.Rdata`: 
+
+```{R eval=FALSE, echo=TRUE}
+load(url("http://www.openintro.org/stat/data/bdims.RData"))
+
+head(bdims)
+
+names(bdims)
+
+summary(bdims)
+```
+
+Finally, as we will explore in a bit, to load data sources from other programs (e.g., Stata, SPSS, etc.), we will first need to install and load the `foreign` package. We will touch on this more next week when we will get our hands dirty with some data. But it is useful to point out to prepare you for it.
+
+#### Exporting (Writing) Data
+
+Finally, you can also export data that you manipulate or create or update within `R`. You can "write" this data in any format you wish using the `write.` command. For example, if you updated or created a data set, you could write the new one as a `.csv` and save it in your working directory. 
+
+```{R eval=FALSE, echo=TRUE}
+a <- c(1,2,3,4,5)
+b <- c(2,3,4,5,6)
+ab <- data.frame(a, b)
+
+write.csv(ab, "ab.csv")
+```
+
+We will go over this is much more detail as we manage and wranlge data next class, and throughout the remainder of the course.
+
+### Installing Packages & Loading Libraries
+
+We will now shift to explore packages in `R`. We will learn how to install packages and load libraries for a specific function or suite of functions beyond the confines of base `R`. This is incredibly valuable in virtually any coding or research task in `R`, as `R` is open source, meaning people are developing and contributing packages to `R` all the time. Thus, we need to get comfortable exploring packages and learning to use them in our own research. 
+
+To access packages, you must first install the package, and then load the library to be able to use the functions stored within the package source files. The basic function for _installing_ any package is `install.packages("[PACKAGE NAME HERE]")`. Then, with the package installed, you _load_ the library using the command `library("[PACKAGE NAME HERE]")`. Note the quotation marks in the `install.packages()` command, but the lack of quotation marks in the `library()` command. You may run up against error messages if you reverse these. To do so, start with the following code to load the `ggplot2` package for a variety of excellent plotting features (which we will explore in greater depth below):
+
+```{R eval=FALSE, echo=TRUE}
+install.packages("ggplot2") # install the ggplot2 package
+library(ggplot2) # load the ggplot2 library to access the data and plotting function
+```
+
+Now, with the package loaded we can use the many great plotting functions in the most widely used plotting package in `R` called `ggplot2`. To demonstrate the vlaue of a package in this conext (plotting), we will first create a basic scatterplot using the `plot` function in base `R`. With this as a baseline, we will use the functions in `ggplot2` to drastically improve this scatterplot. This is a great example of how and why using packages to do stuff beyond base `R` is a valuable approach to coding and analysis.
+
+```{R eval=FALSE, echo=TRUE}
+d <- diamonds # load and store the "diamonds" dataset, which is stored within the ggplot2 package we just loaded
+
+plot(d$price, d$carat,
+     main = "The Price of Diamonds by Weight",
+     xlab = "Price",
+     ylab = "Weight (Carat)")
+```
+
+The code above produces a good, but relatively boring scatterplot. We can generate the same plot above, but in a much prettier way, with way more options to overlay and clean the plot using the `ggplot2` package. To do so, start with the following code.
+
+```{R eval=FALSE, echo=TRUE}
+ggplot(d, aes(x=price, y=carat, color=cut)) + # first the data frame, then in the aesthetic (aes), specific the variables and the color, if desired
+  geom_point() + # tells ggplot to generate a scatterplot (instead of a line plot, e.g.)
+  geom_smooth(method=lm, aes(fill=cut)) # adds a linear smoother with color-specific confidence intervals
+```
+
+Finally, let's bring today's lecture full circle and use a packagae to load some data. Specifically, we will use the `data.table` package to access the very powerful `fread` function, which is an efficient, quick method to load external data into `R`. Note: there are many data reading packages out there. This is one of many. I encourage you to explore some of these others if you are interested in other methods for loading data into `R`. 
+
+Start by installing the package and then loading the library. With this done, we will use the `fread` function to load the beaver body temperatures longitudinal data from a public repository at Oxford. We will conclude by inspecting the data using the `head` command to see the first few observations in the data (if you want to see more than the default, specify the amount you wish to display by adding the `n` argument to the function call). Note: if we weren't using the `data.table` package, as noted above, for Stata data, we would need to first install and load the `foreign` library.
+
+```{R eval=FALSE, echo=TRUE}
+install.packages("data.table")
+library(data.table)
+
+dat.data <- fread('http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat')
+
+head(dat.data)
+```
+
+### Exercises
+
+1. Clear your environment.
+
+2. Change your working directory from where it currerntly is to a new location on your computer (e.g., from your documents folder to your desktop) using the `setwd()` command.
+
+3. Manually place the `movies succcess` data file into your new working directory.
+
+4. Load the `movies success` form your new working directory in `R`. 
+
+5. Inspect the first 15 observations using the `head` command.
+
+6. Detach the `ggplot2` package by typing `detach("package:ggplot2", unload=TRUE)`. Then, reload the library.
+
+7. Use the `qplot` command from the `ggplot2` package to generate a scatterplot of the total revenue for movies (`USRevenue`) by the critial opinion (`Opinion`), with colors and shapes relating to the film's rating.
+
+### Concluding Remarks
+
+Today, we learned how to import a variety of types of data into `R` from a variety of locations, using a variety of commands. We then learned how to install packages and load libraries for more efficient, advanced programming moving beyond base `R`. These are incredibly valuable building blocks for everything else we will cover in this class, and everything else you ever do in `R`, whether the most advanced applied research, software development in `R`, or nothing after this semester. These skills are crucial to hone before moving on.
+
+With these skills in hand, now, we will move on next class to discuss several methods and tools for data wrangling, including management, cleaning, organizing, coding/re-coding, and so on. We will use the traditional base `R` approach for several of these tools first, and then we will introduce the tidy coding approach to data wrangling next. The goal will be to give you a more well-rounded view of coding and how the `R` community thinks about these things, and how it all is continuing to evolve rapidly. 
+
+### More Resources
+
+1. [Useful R Packages](https://support.rstudio.com/hc/en-us/articles/201057987-Quick-list-of-useful-R-packages)
+2. [ggplot2](https://ggplot2.tidyverse.org/reference/)
+3. [More on Loading Data](https://www.statmethods.net/input/importingdata.html)
