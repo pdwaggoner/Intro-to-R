@@ -13,12 +13,6 @@ library(quantedaData)
 library(data.table)
 library(grid)
 
-#if (!require(devtools)) install.packages("devtools") # devtools required to install quanteda from Github
-#devtools::install_github("kbenoit/quantedaData") # install the latest version quanteda from Github
-#slam_url <- "https://cran.r-project.org/src/contrib/Archive/slam/slam_0.1-37.tar.gz"
-#install_url(slam_url)
-#library(Rtools)
-
 # Set working directory
 
 # Store full data as a simpler object to work with
