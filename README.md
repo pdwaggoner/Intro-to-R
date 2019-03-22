@@ -17,6 +17,6 @@ And in the same open source spirit, feel free to fork, adapt, change, update, an
 7. Day 7 - Binary Response Models (Fit and Diagnostics)
 8. Day 8 - Event Count Models (Fit and Diagnostics)
 9. Day 9 - Data Visualization, pt. 1 (Base R)
-10. Day 10 - Data Visualization, pt. 2 (ggplot2 // advanced visual output)
+10. Day 10 - Data Visualization, pt. 2 (ggplot2 // advanced visualization)
 11. Day 11 - Basic Webscraping
 12. Day 12 - Natural Language Processing & Quantitative Text Analysis (Text Models)
