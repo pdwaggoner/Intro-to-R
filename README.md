@@ -4,7 +4,7 @@ This is the repo for my "Introduction to Computation in R" short course for MPP 
 
 Dependent on your preferences, I have included `HTML` (with `CSS`) _and_ `.Rmd` files for each day's content. 
 
-And in the same open source spirit, feel free to fork, adapt, change, update, and share any or all of the code in this repo for any reason. Hope its useful! Don't hesitate to [reach out](http://www.philipdwaggoner.com/) if you have any questions.
+And in the same open source spirit, feel free to fork, adapt, change, update, and share any or all of the code in this repo for any reason. Hope its useful! Don't hesitate to [reach out](https://pdwaggoner.github.io/) if you have any questions.
 
 ## Overview of Topics Covered:
 
