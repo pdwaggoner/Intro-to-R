@@ -4,7 +4,7 @@
 library(XML)
 library(RCurl)
 
-### FIRST: use RCurl to scrape and build a table from a url (adapted from Gelman's code)
+### FIRST: use RCurl to scrape and build a table from a url (adapted/updated from Gelman's code)
 
 # Read in the wiki page for men's 1500 meter records
 wikipediaPage <- "https://en.wikipedia.org/wiki/1500_metres_world_record_progression"
@@ -34,7 +34,7 @@ plot(runTime ~ recordSet, data = finalTable,
      main = "World Records in Men's 1500 Meter")
 
 
-### NEXT: use rvest to scrape from a url
+### NEXT: use rvest to scrape from a url (adapted/updated from Silge's code)
 library(rvest)
 library(tidyverse)
 
@@ -51,7 +51,8 @@ MCs <- MCs[,c(1:2,4:9)] %>% # keep relevant info (inspect the actual wiki page t
   as_tibble() # remember a "tibble" in the tidyverse is == table in base R, with a few slight differences
 
 # Now, inspect your new data frame containing the full membership of the current U.S. Congress
-MCs
+MCs # full frame
+sample_n(MCs, 5) # random sample of length 5
 
 # Visualize your data via a histogram from ggplot2
 ggplot(MCs, aes(`Assumed office`, colour = Party, fill = Party)) + # specify data, the information you want to plot (the year the MC assumed office), and the conditional colors (Party, in this case)
