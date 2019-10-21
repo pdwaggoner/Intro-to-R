@@ -19,4 +19,4 @@ And in the same open source spirit, feel free to fork, adapt, change, update, an
 * Day 9 - Data Visualization, pt. 1 (Base R)
 * Day 10 - Data Visualization, pt. 2 (ggplot2 // advanced visualization)
 * Day 11 - Basic Webscraping
-* Day 12 - Natural Language Processing & Quantitative Text Analysis (Text Models)
+* Day 12 - Natural Language Processing & Quantitative Text Analysis (Staging text docs and fitting text models)
