@@ -10,7 +10,7 @@ And in the same open source spirit, feel free to fork, adapt, change, update, an
 
 * Day 1 - Introduction to R (High Level // RStudio)
 * Day 2 - Data & Packages
-* Day 3 - Data Management (Wrangling via Tidyverse and Base R)
+* Day 3 - Data Management (Wrangling via Tidyverse _and_ Base R)
 * Day 4 - Basic Programming
 * Day 5 - Basic Numeric Relationships
 * Day 6 - OLS (Fit and Diagnostics)
